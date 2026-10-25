@@ -359,7 +359,7 @@ sel.value = start; apply(start);
 sel.addEventListener("change", () => apply(sel.value));
 
 // Neueste Version: Download-Knöpfe direkt auf Setup bzw. portable ZIP zeigen lassen.
-fetch("https://api.github.com/repos/DevCatSKZ/SKZ Connect/releases/latest")
+fetch("https://api.github.com/repos/DevCatSKZ/SKZ-Connect/releases/latest")
   .then(r => r.json())
   .then(rel => {
     const assets = rel.assets || [];
