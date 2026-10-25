@@ -23,7 +23,7 @@ ist, steht das dabei.
 Für Nutzer: [../README.md](../README.md) und die Anleitungen [Windows](anleitung/windows.md),
 [Android](anleitung/android.md), [Kodi](anleitung/kodi.md), [Hilfe bei Problemen](anleitung/hilfe.md) (englisch in
 [guide/](guide/)). Arbeitsstand und Release-Ablauf: [../HANDOVER.md](../HANDOVER.md). Regeln
-für Agenten: [../AGENTS.md](../AGENTS.md). Lizenzen: [../THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
+für Agenten: `AGENTS.md` (nur im lokalen Arbeitsordner, nicht im Repo). Lizenzen: [../THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
 ## In einem Satz
 

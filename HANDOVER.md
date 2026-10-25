@@ -10,7 +10,7 @@ Xbox-360- oder DualShock-4-Controller erscheinen. Dazu gibt es SKZ Connect für 
 über Bluetooth LE, virtueller Xbox-Controller per Shizuku oder Root, Touch-Steuerung) und SKZ Connect für
 Kodi/LibreELEC (Linux-Dienst und Kodi-Add-on, Begleitmodus unter Kodi für Windows, Android und macOS).
 
-- Regeln für alle Agenten: [AGENTS.md](AGENTS.md)
+- Regeln für alle Agenten: `AGENTS.md` im Repo-Ordner (lokal, per `.gitignore` nicht im Repo)
 - Entwicklerdoku (Funktionen, Architektur, Protokolle, Android, Linux/Kodi): [docs/README.md](docs/README.md)
 - Bisheriger Verlauf und Erkenntnisse: [docs/VERLAUF.md](docs/VERLAUF.md)
 - Release-Notizen: [docs/release-notes/](docs/release-notes/)
