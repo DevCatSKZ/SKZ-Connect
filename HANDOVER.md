@@ -78,7 +78,8 @@ py -3 android\make_icons.py                                     # Android-Mipmap
 copy installer\art\SKZ-Connect.png ..\kodi-repo\service.skzconnect\icon.png       # ebenso
 copy installer\art\SKZ-Connect.png ..\kodi-repo\plugin.skzconnect.status\icon.png # plugin… und
 copy installer\art\SKZ-Connect.png ..\kodi-repo\script.skzconnect.bundle\icon.png # script…
-copy installer\art\SKZ-Connect.png ..\SKZ-Connect-pages\logo.png                  # Webseite
+copy installer\art\SKZ-Connect-glyph.png ..\SKZ-Connect-pages\logo.png            # Webseite: ohne Grund (hell/dunkel)
+copy installer\art\SKZ-Connect.png ..\SKZ-Connect-pages\apple-touch-icon.png      # iOS-Symbol: Kachel
 ```
 
 `--render-brand` schreibt `SKZ-Connect.png`/`.ico`, `SKZ-Connect-glyph.png` (Glyph ohne Grund) und die sechs

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="installer/art/SKZ-Connect.png" width="112" alt="SKZ-Connect-Logo">
+<img src="installer/art/SKZ-Connect-glyph.png" width="112" alt="SKZ-Connect-Logo">
 
 # SKZ Connect
 
