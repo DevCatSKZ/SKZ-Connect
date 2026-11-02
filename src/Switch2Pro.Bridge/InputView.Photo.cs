@@ -200,7 +200,11 @@ internal sealed partial class InputView
         if (_artworkVisible && _input?.Kind == ControllerKind.GameCube2)
         {
             using var shoulder = GameCubeArtworkShoulder(text);
+            var state = g.Save();
+            // Auch der Leuchtrand bleibt innerhalb der tatsächlichen Kappe.
+            g.SetClip(shoulder, CombineMode.Intersect);
             HighlightArtwork(g, shoulder, on ? 1 : value);
+            g.Restore(state);
             return;
         }
         var p1 = f.P(x1, yT1);

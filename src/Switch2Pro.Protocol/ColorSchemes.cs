@@ -24,6 +24,7 @@ public sealed record ColorScheme(string Id, string Name, PaletteColors DarkPalet
 
 public static class ColorSchemes
 {
+    public const string DefaultId = "windows";
     private static PaletteColors P(bool dark, int window, int surface, int control, int border, int text, int muted, int canvas,
         int controlBorder, int accent, int accent2, int pressed) =>
         new(dark, window, surface, control, border, text, muted, canvas, controlBorder, accent, accent2, pressed);
@@ -109,7 +110,7 @@ public static class ColorSchemes
     ];
 
     /// <summary>Schema zu einer Kennung ("neon", "aurora" …); unbekannt oder null = Standard (Windows).</summary>
-    public static ColorScheme ById(string? id) => All.FirstOrDefault(s => s.Id == id) ?? All[0];
+    public static ColorScheme ById(string? id) => All.FirstOrDefault(s => s.Id == id) ?? All.Single(s => s.Id == DefaultId);
 
     /// <summary>Relative Helligkeit (WCAG) einer 0xRRGGBB-Farbe, 0 = schwarz, 1 = weiß.</summary>
     public static float Luminance(int rgb)

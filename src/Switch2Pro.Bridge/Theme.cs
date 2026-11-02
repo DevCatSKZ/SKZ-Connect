@@ -37,7 +37,7 @@ internal static partial class Theme
             C(p.ControlBorder), C(p.Accent), C(p.Accent2), C(p.Pressed));
 
     /// <summary>
-    /// Alle Farbschemata (das erste ist der Standard). Die Farben stehen in der gemeinsamen Bibliothek
+    /// Alle Farbschemata. Der Standard ist Windows. Die Farben stehen in der gemeinsamen Bibliothek
     /// (<see cref="ColorSchemes"/>), damit Windows und Android gleich aussehen. Neon-Schemata: Akzente tief genug für weiße
     /// Schrift, Linien und Leuchten im dunklen Modus aufgehellt (<see cref="AccentLine"/>).
     /// </summary>
@@ -46,11 +46,12 @@ internal static partial class Theme
         .ToArray();
 
     /// <summary>Paletten des Standardschemas (z. B. zum Erkennen unveränderter Label-Farben).</summary>
-    public static Palette DarkPalette => Schemes[0].DarkPalette;
-    public static Palette LightPalette => Schemes[0].LightPalette;
+    private static readonly Scheme StandardScheme = Schemes.Single(s => s.Id == ColorSchemes.DefaultId);
+    public static Palette DarkPalette => StandardScheme.DarkPalette;
+    public static Palette LightPalette => StandardScheme.LightPalette;
 
-    public static Palette Current { get; private set; } = Schemes[0].DarkPalette;
-    public static Scheme ActiveScheme { get; private set; } = Schemes[0];
+    public static Palette Current { get; private set; } = StandardScheme.DarkPalette;
+    public static Scheme ActiveScheme { get; private set; } = StandardScheme;
     public static bool Dark => Current.Dark;
     public static Color Accent => Current.Accent;
     /// <summary>Zweite Akzentfarbe – Ende des Verlaufs <see cref="Accent"/> → <see cref="Accent2"/>.</summary>
@@ -120,8 +121,8 @@ internal static partial class Theme
     /// <summary>Mica-Titelleiste aktiv (Einstellung an und Windows 11).</summary>
     public static bool Mica { get; private set; }
 
-    /// <summary>Schema zu einer Kennung ("neon", "aurora" …); unbekannt oder null = Neon.</summary>
-    public static Scheme SchemeById(string? id) => Schemes.FirstOrDefault(s => s.Id == id) ?? Schemes[0];
+    /// <summary>Schema zu einer Kennung; unbekannt oder null = Windows.</summary>
+    public static Scheme SchemeById(string? id) => Schemes.Single(s => s.Id == ColorSchemes.ById(id).Id);
 
     /// <summary>Darstellung festlegen: "dark" (Standard, auch null = nie gewählt), "light" oder "system" (wie Windows);
     /// Farbschema (null = Neon); Mica nur ab Windows 11. Die Wahl im Installer steht schon in den Einstellungen

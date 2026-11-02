@@ -87,7 +87,7 @@ Neu in der gemeinsamen Bibliothek (`src/Switch2Pro.Protocol`, auch unter Windows
 
 - `XboxBtReport.cs` – Deskriptor und 17-Byte-Bericht des virtuellen Xbox-One-S-Controllers, `UhidCommand` (JSON für
   den Shell-Befehl `hid`). Tests: `XboxBtReportTests` (gegen die CTS-Referenzberichte).
-- `ColorSchemes.cs` – die fünf Farbschemata (Windows, Neon, Aurora, Sunset, Joy-Con) als gemeinsame Quelle; die
+- `ColorSchemes.cs` – die 14 Farbschemata (darunter Windows, Neon, Aurora, Sunset und JoCo) als gemeinsame Quelle; die
   Windows-App (`Theme.cs`) liest sie ebenfalls daraus. Tests: `ColorSchemesTests`.
 - `Dsu.cs`, `DsuServer.cs` – Cemuhook-/DSU-Pakete und der UDP-Server auf 127.0.0.1:26760 (Gyro und Tasten für
   Emulatoren), derselbe Server wie unter Windows und Linux. Tests: `DsuServerTests` (echter UDP-Austausch).

@@ -28,8 +28,10 @@ Analoge Trigger zeigen ihren Prozentwert; beim N64 werden die vier C-Tasten aus
 den entsprechenden Achsen abgebildet. Joy-Con-Ausrichtung, Generation und Grip
 sowie Wii-Erweiterungen bestimmen die angebotenen Tastenfelder.
 
-Die GameCube-Schultermarkierungen verwenden eigene, direkt am neuen Bild
-abgenommene Bézier-Konturen statt der früheren schrägen Foto-Keile.
+Die GameCube-Schultermarkierungen verwenden separat am Bild abgenommene
+L-/R-Konturen. Füllung und Leuchtrand sind auf die tatsächliche Kappenfläche
+begrenzt. Einzel-, Analog- und gleichzeitige Eingaben werden mit
+`--gamecube` in der fensterfreien Prüfhilfe dargestellt.
 
 GUI-Prüfung mit `--buttons-only`: dunkel/normal und hell/kompakt bei simulierten
 150 %. Der sichtbare Umschalter wurde in beiden Richtungen geprüft; die

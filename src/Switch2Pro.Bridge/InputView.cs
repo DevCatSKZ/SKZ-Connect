@@ -26,7 +26,7 @@ internal sealed partial class InputView : Control
 
     /// <summary>Hintergrund der Grafik = Kartenfarbe der Darstellung (dunkel/hell).</summary>
     private static Color Back => Theme.GlassSurface;
-    // Gedrückte Tasten leuchten in der Farbe des Farbschemas (Neon: Cyan, Aurora: Mint, Sunset: Orange, Joy-Con: Rot).
+    // Gedrückte Tasten leuchten in der Farbe des Farbschemas (Neon: Cyan, Aurora: Mint, Sunset: Orange, JoCo: Rot).
     private static Color Accent => Theme.Pressed;
     private static Color AccentGlow => Color.FromArgb(110, Theme.Pressed);
 

@@ -7,6 +7,18 @@ namespace Switch2Pro.Protocol.Tests;
 public sealed class ControllerDisplaySettingsTests
 {
     [Fact]
+    public void NewAndUnspecifiedSettingsUseWindowsWhileSavedSelectionsRemain()
+    {
+        Assert.Equal("windows", new Settings().ColorScheme);
+        Assert.Equal("windows", JsonSerializer.Deserialize<Settings>("{}")!.ColorScheme);
+        Assert.Equal("windows", ColorSchemes.ById(JsonSerializer.Deserialize<Settings>("{\"ColorScheme\":null}")!.ColorScheme).Id);
+        var selected = new Settings { ColorScheme = "joycon" };
+        var loaded = JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(selected))!;
+        Assert.Equal("joycon", loaded.ColorScheme);
+        Assert.Equal("JoCo", ColorSchemes.ById(loaded.ColorScheme).Name);
+    }
+
+    [Fact]
     public void OldSettingsKeepImagesAndButtonOnlyPreferenceSurvivesReloadAndCopy()
     {
         Assert.True(JsonSerializer.Deserialize<Settings>("{}")!.ShowControllerImages);

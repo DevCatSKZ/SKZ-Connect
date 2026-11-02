@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.skzconnect.bundle" name="SKZ Connect Bundle Installer" version="1.0.7" provider-name="devcatskz">
+<addon id="script.skzconnect.bundle" name="SKZ Connect Bundle Installer" version="1.0.8" provider-name="devcatskz">
     <!-- Offline-Installer: bringt service.skzconnect und plugin.skzconnect.status als ZIPs mit (resources/data). Die ZIPs
          und das Symbol legt linux/build-kodi-addon.ps1 beim Packen hinein – jeweils die aktuelle Version. Bei jeder
          neuen service.skzconnect- oder Plugin-Version auch hier die Version erhöhen (das Build-Skript prüft das).
@@ -39,7 +39,7 @@
         <description lang="zh_CN">一步安装 SKZ Connect（手柄服务）和状态小部件（plugin.skzconnect.status）。在 Aeon Nox Silvo 中还会自动添加菜单项及其小部件。之后请重启 Kodi。</description>
         <description lang="ko_KR">SKZ Connect(컨트롤러 서비스)와 상태 위젯(plugin.skzconnect.status)을 한 번에 설치합니다. Aeon Nox Silvo에서는 메뉴 항목과 위젯도 자동으로 추가합니다. 그런 다음 Kodi를 다시 시작하세요.</description>
         <platform>all</platform>
-        <news>1.0.7: SKZ Connect 0.4.9 und Status 1.1.5 / SKZ Connect 0.4.9 and Status 1.1.5</news>
+        <news>SKZ Connect und Status-Widget / SKZ Connect and status widget</news>
         <license>MIT</license>
         <source>https://github.com/DevCatSKZ/SKZ-Connect</source>
         <website>https://github.com/DevCatSKZ/SKZ-Connect</website>

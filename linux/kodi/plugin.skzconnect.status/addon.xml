@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.skzconnect.status" name="SKZ Connect Status" version="1.1.5" provider-name="devcatskz">
+<addon id="plugin.skzconnect.status" name="SKZ Connect Status" version="1.1.6" provider-name="devcatskz">
     <!-- Ältere Widget-Quelle für Skins (plugin://plugin.skzconnect.status/). Die Anzeige liegt in service.skzconnect
          (plugin.py) – dieses Add-on leitet nur weiter, damit bestehende Widget-Einstellungen weiter funktionieren.
          Das Symbol (resources/icon.png) legt linux/build-kodi-addon.ps1 beim Packen hinein. -->
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="service.skzconnect" version="0.4.9"/>
+        <import addon="service.skzconnect" version="0.4.10"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -41,7 +41,7 @@
         <license>MIT</license>
         <source>https://github.com/DevCatSKZ/SKZ-Connect</source>
         <website>https://github.com/DevCatSKZ/SKZ-Connect</website>
-        <news>1.1.5: Controllerbilder aus SKZ Connect 0.4.9 / Controller artwork from SKZ Connect 0.4.9</news>
+        <news>SKZ Connect Status-Widget / SKZ Connect status widget</news>
         <assets>
             <icon>resources/icon.png</icon>
         </assets>

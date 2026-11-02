@@ -12,8 +12,8 @@ public class ColorSchemesTests
             ["hologlas", "mitternacht", "tageslicht", "nova", "abendrot", "tiefsee", "sakura", "graphit",
              "samtpfoten", "windows", "neon", "aurora", "sunset", "joycon"],
             ColorSchemes.All.Select(s => s.Id));
-        Assert.Equal("hologlas", ColorSchemes.ById(null).Id);
-        Assert.Equal("hologlas", ColorSchemes.ById("gibt-es-nicht").Id);
+        Assert.Equal("windows", ColorSchemes.ById(null).Id);
+        Assert.Equal("windows", ColorSchemes.ById("gibt-es-nicht").Id);
         Assert.Equal("aurora", ColorSchemes.ById("aurora").Id);
         Assert.False(ColorSchemes.ById("windows").Neon);
         Assert.False(ColorSchemes.ById("graphit").Neon);

@@ -8,6 +8,47 @@ namespace Switch2Pro.Bridge.Tests;
 public sealed class ControllerArtworkTests
 {
     [Fact]
+    public void GameCubeShouldersDoNotTintThePurpleShellBelowTheCaps()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                Theme.Init("dark", transparency: false, "hologlas");
+                using var view = new InputView { Size = new Size(580, 410) };
+                Bitmap Render(ProButtons buttons, float rightTrigger = 0)
+                {
+                    var input = new PadInput { Kind = ControllerKind.GameCube2, Buttons = buttons, RightTrigger = rightTrigger };
+                    view.Show(input, Mapping.ToGamepad(input, new Settings()));
+                    var bitmap = new Bitmap(view.Width, view.Height);
+                    view.DrawToBitmap(bitmap, view.ClientRectangle);
+                    return bitmap;
+                }
+                Color Pixel(Bitmap bitmap, int imageX, int imageY) =>
+                    bitmap.GetPixel((int)Math.Round(imageX / 1491f * view.Width), (int)Math.Round(imageY / 1055f * view.Height));
+                using var idle = Render(ProButtons.None);
+                foreach (var (button, outsideX, insideX) in new[] { (ProButtons.L, 616, 540), (ProButtons.R, 875, 950) })
+                {
+                    using var active = Render(button);
+                    // Die Gehäusepunkte müssen beim Drücken unverändert bleiben.
+                    Assert.Equal(Pixel(idle, outsideX, 145), Pixel(active, outsideX, 145));
+                    Assert.NotEqual(Pixel(idle, insideX, 90), Pixel(active, insideX, 90));
+                }
+                using var partial = Render(ProButtons.None, 0.5f);
+                Assert.Equal(Pixel(idle, 875, 145), Pixel(partial, 875, 145));
+                using var released = Render(ProButtons.None);
+                Assert.Equal(Pixel(idle, 950, 90), Pixel(released, 950, 90));
+            }
+            catch (Exception ex) { failure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+        if (failure is not null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    [Fact]
     public void EveryControllerAndWiiExtensionHasEmbeddedArtwork()
     {
         var names = Enum.GetValues<ControllerKind>().Select(k => InputView.ArtworkName(k))

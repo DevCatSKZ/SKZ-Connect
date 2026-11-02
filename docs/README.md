@@ -3,7 +3,7 @@
 Beschreibung der Funktionen, des Aufbaus und der Controller-Protokolle von SKZ Connect – Grundlage für die
 Weiterentwicklung der Windows-App, der Android-App und des Linux-Dienstes mit Kodi-Add-on.
 
-Stand: 02.11.2026 – Windows 1.0.25, Android 0.9.4 (Beta), Kodi `service.skzconnect` 0.4.9; alle .NET-Projekte auf
+Stand: 02.11.2026 – Windows 1.0.26, Android 0.9.5 (Beta), Kodi `service.skzconnect` 0.4.10; alle .NET-Projekte auf
 .NET 10. Die Angaben sind aus dem Code abgeleitet; wo etwas nur geschätzt oder nicht mit echter Hardware geprüft
 ist, steht das dabei.
 

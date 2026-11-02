@@ -77,19 +77,38 @@ internal sealed partial class InputView
     private static GraphicsPath GameCubeArtworkShoulder(string button)
     {
         var path = new GraphicsPath();
-        bool mirror = button is "R" or "Z";
+        bool mirror = button == "Z";
         PointF P(float x, float y) => new(
             ArtworkCanvas.X + (mirror ? 1491 - x : x) / 1491f * ArtworkCanvas.Width,
             ArtworkCanvas.Y + y / 1055f * ArtworkCanvas.Height);
         if (button is "L" or "R")
         {
-            path.AddBezier(P(423, 104), P(464, 77), P(505, 42), P(547, 35));
-            path.AddBezier(P(547, 35), P(578, 27), P(631, 35), P(652, 47));
-            path.AddBezier(P(652, 47), P(664, 52), P(667, 60), P(665, 73));
-            path.AddLine(P(665, 73), P(662, 111));
-            path.AddBezier(P(662, 111), P(661, 124), P(658, 132), P(647, 137));
-            path.AddBezier(P(647, 137), P(587, 165), P(500, 179), P(434, 166));
-            path.AddBezier(P(434, 166), P(425, 165), P(423, 160), P(423, 150));
+            // Die Kappen sind im Rasterbild nicht spiegelgleich. Beide Konturen
+            // folgen separat der hellen Tastenfläche, knapp innerhalb ihrer Kante.
+            PointF[] points = button == "L"
+                ? [
+                    P(570.5f, 32f), P(523f, 39f), P(504f, 46f), P(489f, 53f), P(476f, 60f),
+                    P(463f, 67f), P(451f, 74f), P(440f, 81f), P(428f, 88f), P(423f, 95f),
+                    P(422f, 102f), P(422f, 109f), P(422f, 116f), P(422f, 123f), P(422f, 130f),
+                    P(422f, 137f), P(422f, 144f), P(422f, 151f), P(422f, 158f), P(426f, 165f),
+                    P(443f, 168f), P(461f, 170f), P(483f, 171f), P(495f, 171f), P(512f, 170f),
+                    P(525f, 168f), P(540f, 165f), P(564f, 158f), P(582f, 151f), P(598f, 144f),
+                    P(613f, 137f), P(626f, 130f), P(638f, 123f), P(650f, 116f), P(658f, 109f),
+                    P(660f, 102f), P(660f, 95f), P(661f, 88f), P(660f, 81f), P(661f, 74f),
+                    P(667f, 67f), P(667f, 60f), P(664f, 53f), P(653f, 46f), P(626f, 39f),
+                    P(570.5f, 32f)]
+                : [
+                    P(914f, 32f), P(861f, 39f), P(834f, 46f), P(825f, 53f), P(822f, 60f),
+                    P(821f, 67f), P(821f, 74f), P(821f, 81f), P(828f, 88f), P(828f, 95f),
+                    P(828f, 102f), P(830f, 109f), P(838f, 116f), P(850f, 123f), P(863f, 130f),
+                    P(876f, 137f), P(891f, 144f), P(907f, 151f), P(924f, 158f), P(949f, 165f),
+                    P(967f, 168f), P(984f, 170f), P(1004.5f, 171f), P(1004.5f, 171f), P(1024f, 170f),
+                    P(1042f, 168f), P(1058f, 165f), P(1067f, 158f), P(1067f, 151f), P(1068f, 144f),
+                    P(1067f, 137f), P(1068f, 130f), P(1068f, 123f), P(1068f, 116f), P(1067f, 109f),
+                    P(1067f, 102f), P(1067f, 95f), P(1062f, 88f), P(1050f, 81f), P(1037f, 74f),
+                    P(1025f, 67f), P(1011f, 60f), P(999f, 53f), P(983f, 46f), P(966f, 39f),
+                    P(919f, 32f)];
+            path.AddClosedCurve(points, 0.12f);
         }
         else
         {

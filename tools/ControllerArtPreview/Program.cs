@@ -7,7 +7,7 @@ internal static class Program
     private static void Main(string[] args)
     {
         var assembly = Assembly.Load("SKZ-Connect");
-        var type = args.Contains("--themes") ? "ThemePreview" : args.Contains("--icons") ? "ControllerIconExporter" : "RenderCheck";
+        var type = args.Contains("--gamecube") ? "GameCubeShoulderPreview" : args.Contains("--themes") ? "ThemePreview" : args.Contains("--icons") ? "ControllerIconExporter" : "RenderCheck";
         assembly.GetType("Switch2Pro.Bridge." + type, throwOnError: true)!
             .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!
             .Invoke(null, [Path.GetFullPath(args[0])]);
