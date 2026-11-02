@@ -1,0 +1,89 @@
+# Prüft und baut die Kodi-Add-ons von SKZ Connect (service.skzconnect für LibreELEC/Linux samt Begleitmodus,
+# plugin.skzconnect.status, script.skzconnect.bundle, repository.devcatskz).
+# - Jeder Lauf: Tests (Linux-Dienst und Add-on-Logik, Sprachdateien aktuell), dann alle ZIPs als Artefakt „Kodi-Plugin“.
+# - Tag „v1.2.3“: Die service.skzconnect-ZIPs zusätzlich ans GitHub-Release.
+# Das DevCatSKZ Repository (github.com/DevCatSKZ/kodi-repo) pflegt die CI bewusst nicht – Deploy-Keys sind in der
+# Organisation abgeschaltet. Beim Release von Hand (siehe docs/LINUX-KODI.md):
+#   powershell -File linux/build-kodi-addon.ps1 -Repo -RepoDir <kodi-repo>, dort committen (devcatskz) und pushen.
+# Eine Version, die im kodi-repo schon liegt, überschreibt das Skript nie (dann vorher in der addon.xml hochzählen).
+name: SKZ Connect – Kodi-Plugin
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "linux/**"
+      - "src/Switch2Pro.Protocol/**"
+      - "tests/SkzConnect.Linux.Tests/**"
+      - "THIRD-PARTY-NOTICES.md"
+      - "Directory.Build.props"
+      - ".github/workflows/kodi.yml"
+permissions:
+  contents: write
+concurrency:
+  group: kodi-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  kodi:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Linux-Dienst testen
+        run: dotnet test tests/SkzConnect.Linux.Tests -c Release
+
+      - name: Add-on-Logik testen, Sprachdateien aktuell
+        run: |
+          python -m unittest discover -s linux/kodi/tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # strings.po werden aus linux/kodi/i18n erzeugt – von Hand geänderte oder vergessene Dateien fallen hier auf
+          python linux/kodi/i18n/generate.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Inhalt vergleichen, nicht „git status“: Der Windows-Runner checkt mit core.autocrlf=true aus (CRLF), generate.py
+          # schreibt LF. git status meldet dann jede neu geschriebene Datei als geändert (andere Größe), obwohl ihr Inhalt
+          # gleich ist – git diff vergleicht nach der Zeilenende-Umwandlung. Neue Dateien zeigt git diff nicht, daher ls-files.
+          git -c core.safecrlf=false diff --exit-code --stat -- linux/kodi
+          $diff = $LASTEXITCODE
+          if ($diff -gt 1) { exit $diff }
+          $new = git ls-files --others --exclude-standard -- linux/kodi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($diff -eq 1 -or $new) {
+            $new | ForEach-Object { Write-Host "neu: $_" }
+            Write-Host "::error::linux/kodi/i18n/generate.py ändert Sprachdateien – lokal ausführen und committen"
+            exit 1
+          }
+
+      - name: "Add-ons bauen (LibreELEC: x86_64, arm64, arm)"
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File linux/build-kodi-addon.ps1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Kodi-Plugin
+          path: out/kodi/*.zip
+
+      - name: An das GitHub-Release hängen
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          # Das Windows-Release legt der andere Workflow an; falls er noch läuft, warten (bis 20 Minuten).
+          for ($i = 0; $i -lt 60 -and -not (gh release view $tag 2>$null); $i++) { Start-Sleep 20 }
+          if (-not (gh release view $tag 2>$null)) {
+            # Selbst anlegen – mit demselben Text, den der Windows-Workflow nähme.
+            $notes = "docs/release-notes/$tag.md"
+            if (Test-Path $notes) { gh release create $tag --title "SKZ Connect $tag" --notes-file $notes }
+            else { gh release create $tag --title "SKZ Connect $tag" --generate-notes }
+          }
+          gh release upload $tag (Get-ChildItem out/kodi -Filter 'SKZ-Connect-Kodi-*.zip').FullName --clobber

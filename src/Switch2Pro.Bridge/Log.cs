@@ -1,0 +1,79 @@
+namespace Switch2Pro.Bridge;
+
+internal static class Paths
+{
+    /// <summary>
+    /// Portable Betrieb: Liegt neben der EXE eine <c>portable.txt</c> oder ein Ordner <c>data</c>,
+    /// wandern Einstellungen und Protokoll dorthin statt nach %APPDATA%/%LOCALAPPDATA%.
+    /// </summary>
+    public static string? PortableDir { get; } = DetectPortable();
+    public static bool IsPortable => PortableDir is not null;
+
+    public static string SettingsDir { get; } = PortableDir ?? Folder(Environment.SpecialFolder.ApplicationData);
+    public static string SettingsFile { get; } = Path.Combine(SettingsDir, "settings.json");
+    public static string LogDir { get; } = PortableDir ?? Folder(Environment.SpecialFolder.LocalApplicationData);
+
+    private static string? DetectPortable()
+    {
+        try
+        {
+            string? dir = Path.GetDirectoryName(Environment.ProcessPath);
+            if (dir is null)
+                return null;
+            string data = Path.Combine(dir, "data");
+            return File.Exists(Path.Combine(dir, "portable.txt")) || Directory.Exists(data) ? data : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Ordner „SKZ-Connect“ unter <paramref name="root"/>.</summary>
+    private static string Folder(Environment.SpecialFolder root) =>
+        Path.Combine(Environment.GetFolderPath(root), "SKZ-Connect");
+    public static string LogFile { get; } = Path.Combine(LogDir, "bridge.log");
+}
+
+/// <summary>Kleines Datei-Protokoll (wird ab 1 MB einmal rotiert).</summary>
+internal static class Log
+{
+    private static readonly object Gate = new();
+
+    public static void Info(string message) => Write("INFO ", message);
+    public static void Warn(string message) => Write("WARN ", message);
+    public static void Error(string message, Exception? e = null) =>
+        Write("ERROR", e is null ? message : $"{message}: {e}");
+
+    /// <summary>
+    /// Kurzer Grund einer Ausnahme fürs Protokoll. Windows-Ausnahmen (COM/WinRT) kommen oft ohne Text –
+    /// dann wenigstens Art und Fehlercode, sonst stünde im Protokoll nur „…: “.
+    /// </summary>
+    public static string Reason(Exception e) =>
+        string.IsNullOrWhiteSpace(e.Message) ? $"{e.GetType().Name} 0x{e.HResult:X8}"
+        : e is System.Runtime.InteropServices.COMException or System.ComponentModel.Win32Exception
+            ? $"{e.Message.Trim()} (0x{e.HResult:X8})" : e.Message.Trim();
+
+    private static void Write(string level, string message)
+    {
+        var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level} {message}{Environment.NewLine}";
+        lock (Gate)
+        {
+            try
+            {
+                Directory.CreateDirectory(Paths.LogDir);
+                var info = new FileInfo(Paths.LogFile);
+                if (info.Exists && info.Length > 1_000_000)
+                    File.Move(Paths.LogFile, Paths.LogFile + ".1", overwrite: true);
+                File.AppendAllText(Paths.LogFile, line);
+            }
+            catch (IOException)
+            {
+                // Protokoll ist nur Hilfe bei der Fehlersuche; niemals daran scheitern.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+}

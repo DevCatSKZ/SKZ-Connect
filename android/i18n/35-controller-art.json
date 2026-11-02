@@ -1,0 +1,28 @@
+{
+  "Controllerbilder": {
+    "en": "Controller images",
+    "es": "Imágenes de mandos",
+    "fr": "Images des manettes",
+    "it": "Immagini dei controller",
+    "pt": "Imagens dos comandos",
+    "nl": "Controllerafbeeldingen",
+    "pl": "Obrazy kontrolerów",
+    "ru": "Изображения геймпадов",
+    "ja": "コントローラー画像",
+    "zh": "控制器图像",
+    "ko": "컨트롤러 이미지"
+  },
+  "Live-Eingaben bleiben auch ohne Bild sichtbar.": {
+    "en": "Live input remains visible without an image.",
+    "es": "Las entradas en directo siguen visibles sin imagen.",
+    "fr": "Les entrées en direct restent visibles sans image.",
+    "it": "Gli input in tempo reale restano visibili anche senza immagine.",
+    "pt": "As entradas em tempo real continuam visíveis sem imagem.",
+    "nl": "Live-invoer blijft ook zonder afbeelding zichtbaar.",
+    "pl": "Bieżące wejścia pozostają widoczne również bez obrazu.",
+    "ru": "Ввод в реальном времени виден и без изображения.",
+    "ja": "画像がなくてもリアルタイムの入力を確認できます。",
+    "zh": "不显示图像时仍可查看实时输入。",
+    "ko": "이미지 없이도 실시간 입력을 볼 수 있습니다."
+  }
+}

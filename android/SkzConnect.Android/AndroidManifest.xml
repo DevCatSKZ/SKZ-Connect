@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+  <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
+  <!-- Bluetooth LE ab Android 12 (Switch-2-Controller verbinden; kein Standortzugriff nötig). -->
+  <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+                   android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+  <!-- Bluetooth bis Android 11. -->
+  <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+
+  <!-- Verbindungen halten, während ein Spiel im Vordergrund läuft. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- Für „DevCatSKZ Repository für Kodi herunterladen“ und den Update-Check. -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <!-- Direkter System-Dialog „Akku: nicht einschränken“ (verhindert Abbrüche beim Spielen). -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <!-- „Mit Android starten“: Controller-Dienst nach dem Einschalten wieder hochfahren. -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Update-Check: geladene APK über den System-Installer einspielen (fragt Android noch einmal). -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+  <!-- „Profil je Spiel“: App im Vordergrund erkennen (Nutzer erlaubt es in den Systemeinstellungen). -->
+  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+
+  <!-- Ab Android 11 sieht eine App andere Apps nur, wenn sie das ankündigt: Shizuku erkennen und öffnen. -->
+  <queries>
+    <package android:name="moe.shizuku.privileged.api" />
+    <!-- Kodi erkennen (DevCatSKZ Repository einrichten) -->
+    <package android:name="org.xbmc.kodi" />
+    <!-- „Profile je Spiel“: startbare Apps zur Auswahl anbieten (auch Fernseher-Apps) … -->
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+    </intent>
+    <!-- … und Startbildschirme erkennen, damit ein Wechsel dorthin das Profil nicht umschaltet. -->
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.HOME" />
+    </intent>
+  </queries>
+
+  <application android:allowBackup="true"
+               android:icon="@mipmap/appicon"
+               android:roundIcon="@mipmap/appicon_round"
+               android:label="@string/app_name"
+               android:supportsRtl="true"
+               android:theme="@style/AppTheme">
+
+    <!-- Shizuku liefert über diesen Provider seine Schnittstelle an die App (Shell-Rechte ohne Root). -->
+    <provider android:name="rikka.shizuku.ShizukuProvider"
+              android:authorities="com.devcatskz.skzconnect.shizuku"
+              android:multiprocess="false"
+              android:enabled="true"
+              android:exported="true"
+              android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+    <!-- Reicht geladene Update-APKs sicher an den System-Installer durch (statt sie „auszuliefern“). -->
+    <provider android:name="androidx.core.content.FileProvider"
+              android:authorities="com.devcatskz.skzconnect.fileprovider"
+              android:exported="false"
+              android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                 android:resource="@xml/file_paths" />
+    </provider>
+  </application>
+</manifest>

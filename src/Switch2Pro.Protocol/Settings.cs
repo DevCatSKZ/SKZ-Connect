@@ -1,0 +1,918 @@
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Switch2Pro.Protocol;
+
+/// <summary>Eigene Werte einer Controller-Art; null = allgemeiner Wert gilt.</summary>
+public sealed record ControllerTuning
+{
+    public float? StickCurve { get; init; }
+    public float? TriggerDeadzone { get; init; }
+    public float? TriggerFullAt { get; init; }
+    public float? RumbleStrength { get; init; }
+    public float? GyroMouseSpeed { get; init; }
+
+    [JsonIgnore]
+    public bool IsEmpty => StickCurve is null && TriggerDeadzone is null && TriggerFullAt is null && RumbleStrength is null && GyroMouseSpeed is null;
+
+    internal ControllerTuning Sanitized()
+    {
+        static float? Fin(float? v, float min, float max) => v is { } x && float.IsFinite(x) ? Math.Clamp(x, min, max) : null;
+        return new ControllerTuning
+        {
+            StickCurve = Fin(StickCurve, 0.3f, 3f),
+            TriggerDeadzone = Fin(TriggerDeadzone, 0f, 0.5f),
+            TriggerFullAt = Fin(TriggerFullAt, 0.5f, 1f),
+            RumbleStrength = Fin(RumbleStrength, 0f, 1f),
+            GyroMouseSpeed = Fin(GyroMouseSpeed, 1f, 100f),
+        };
+    }
+}
+
+public enum OutputMode
+{
+    /// <summary>Virtueller Xbox-360-Controller (XInput) – funktioniert mit praktisch allen Spielen.</summary>
+    Xbox360,
+    /// <summary>Virtueller DualShock 4 – zusätzlich mit Gyro (Steam, Emulatoren).</summary>
+    DualShock4,
+}
+
+public enum FaceButtonLayout
+{
+    /// <summary>Xbox-Belegung (nach Position): Nintendo B (unten) wird Xbox A (unten) usw.
+    /// Spiele zeigen „A“ für die untere Taste – wie auf einem Xbox-Controller.</summary>
+    Xbox,
+    /// <summary>Switch-2-Pro-Belegung (nach Beschriftung): Nintendo A bleibt A (rechts),
+    /// B bleibt B (unten) – wie auf der Switch.</summary>
+    Switch2,
+}
+
+/// <summary>Ziel einer Taste beim freien Umbelegen.</summary>
+public enum ExtraButtonTarget
+{
+    None, A, B, X, Y, LB, RB, LT, RT, Back, Start, Guide, LS, RS, Up, Down, Left, Right,
+    /// <summary>Nur DualShock 4: Touchpad-Klick.</summary>
+    Touchpad,
+}
+
+/// <summary>Welcher Joy-Con eines Paars die Bewegungsdaten liefert.</summary>
+public enum GyroSource { Right, Left }
+
+/// <summary>Wer meldet, wenn ein Controller verbunden oder getrennt wird.</summary>
+public enum ConnectNotifications
+{
+    /// <summary>SKZ Connect zeigt die Meldung (mit dem echten Controller-Namen); Gerätemeldungen von Windows aus.</summary>
+    SkzConnect,
+    /// <summary>Nur die Gerätemeldung von Windows; SKZ Connect meldet beim Verbinden/Trennen nichts.</summary>
+    Windows,
+    /// <summary>Beide Meldungen (SKZ Connect und Windows).</summary>
+    Both,
+    /// <summary>Keine Meldung beim Verbinden/Trennen.</summary>
+    None,
+}
+
+/// <summary>Wann der Gyro den rechten Stick steuert (zusätzlich zu den Tasten-Aktionen „Gyro-Stick“).</summary>
+public enum GyroStickMode
+{
+    /// <summary>Nur über eine Taste mit „Gyro-Stick (halten)“ bzw. „ein/aus“.</summary>
+    Off,
+    /// <summary>Immer.</summary>
+    Always,
+    /// <summary>Solange der linke Trigger (Zielen, ZL) gedrückt ist – wie in vielen Shootern üblich.</summary>
+    WhileAiming,
+}
+
+/// <summary>
+/// Benanntes Tastenprofil, z. B. für ein bestimmtes Spiel. Wird automatisch aktiv, solange eines der
+/// <see cref="Programs"/> (EXE-Name, z. B. "Cemu.exe") im Vordergrund ist. Unveränderlich behandeln.
+/// </summary>
+public sealed record NamedProfile
+{
+    public string Name { get; init; } = "Profil";
+    public List<string> Programs { get; init; } = [];
+    /// <summary>Belegung je Controller-Art (wie <see cref="Settings.Profiles"/>).</summary>
+    public Dictionary<ControllerKind, Dictionary<ProButtons, string>> Buttons { get; init; } = [];
+    /// <summary>Shift-Ebene: gilt, solange eine Taste mit der Aktion „Shift“ gehalten wird.</summary>
+    public Dictionary<ControllerKind, Dictionary<ProButtons, string>> ShiftButtons { get; init; } = [];
+
+    public bool MatchesProgram(string exe) =>
+        Programs.Any(p => string.Equals(p.Trim(), exe, StringComparison.OrdinalIgnoreCase));
+
+    private static readonly JsonSerializerOptions FileOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new TolerantEnumConverterFactory() },
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+    };
+
+    /// <summary>Als Datei zum Weitergeben (lesbares JSON).</summary>
+    public string ToJson() => JsonSerializer.Serialize(this, FileOptions);
+
+    /// <summary>Profil aus einer Datei lesen; null, wenn die Datei kein gültiges Profil enthält.</summary>
+    public static NamedProfile? FromJson(string json)
+    {
+        try
+        {
+            var p = JsonSerializer.Deserialize<NamedProfile>(json, FileOptions);
+            if (p is null || string.IsNullOrWhiteSpace(p.Name))
+                return null;
+            // Nur gültige Einträge übernehmen (fremde Dateien können alles enthalten, unbekannte Namen kommen als
+            // ungültiger Wert an – siehe TolerantEnumConverter).
+            static Dictionary<ControllerKind, Dictionary<ProButtons, string>> Clean(Dictionary<ControllerKind, Dictionary<ProButtons, string>>? maps) =>
+                maps?.Where(m => m.Value is not null && Enum.IsDefined(m.Key))
+                    .ToDictionary(m => m.Key, m => m.Value.Where(e => e.Value is not null && Enum.IsDefined(e.Key)).ToDictionary(e => e.Key, e => e.Value)) ?? [];
+            return p with
+            {
+                Name = p.Name.Trim(),
+                Programs = p.Programs?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? [],
+                Buttons = Clean(p.Buttons),
+                ShiftButtons = Clean(p.ShiftButtons),
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+}
+
+/// <summary>
+/// Einstellungen. Wird vom Bluetooth-Thread gelesen und vom Fenster geändert: Listen und
+/// Wörterbücher deshalb nie verändern, sondern immer durch eine neue Kopie ersetzen.
+/// </summary>
+public sealed class Settings
+{
+    public OutputMode OutputMode { get; set; } = OutputMode.Xbox360;
+    public FaceButtonLayout Layout { get; set; } = FaceButtonLayout.Xbox;
+    public bool RumbleEnabled { get; set; } = true;
+    /// <summary>Vibrationsstärke 0.0–1.0.</summary>
+    public float RumbleStrength { get; set; } = 0.8f;
+    /// <summary>Radiale Totzone der Sticks 0.0–0.5.</summary>
+    public float StickDeadzone { get; set; } = 0.06f;
+    /// <summary>
+    /// Freie Umbelegung: Controller-Taste → Ziel. Überschreibt die Belegung aus <see cref="Layout"/>.
+    /// Tasten: A, B, X, Y, L, R, ZL, ZR, Minus, Plus, LeftStick, RightStick, Home, Capture, C, GL, GR,
+    /// Up, Down, Left, Right. Ziele: siehe <see cref="ExtraButtonTarget"/> (None = Taste aus).
+    /// Beispiel: "GL": "LS" legt die linke Rücktaste auf den linken Stick-Klick.
+    /// </summary>
+    public Dictionary<ProButtons, ExtraButtonTarget> Remap { get; set; } = new()
+    {
+        [ProButtons.Capture] = ExtraButtonTarget.Touchpad,
+        [ProButtons.C] = ExtraButtonTarget.None,
+        [ProButtons.GL] = ExtraButtonTarget.None,
+        [ProButtons.GR] = ExtraButtonTarget.None,
+    };
+    /// <summary>
+    /// Belegung je Controller-Art: Taste → Aktion als Text (siehe <see cref="ButtonAction"/>), z. B.
+    /// "Pro2": { "GL": "Key:Ctrl+Shift+S", "C": "Guide" }. Hat Vorrang vor <see cref="Remap"/>.
+    /// </summary>
+    public Dictionary<ControllerKind, Dictionary<ProButtons, string>> Profiles { get; set; } = [];
+    /// <summary>Shift-Ebene des Standardprofils (solange eine Taste mit der Aktion „Shift“ gehalten wird).</summary>
+    public Dictionary<ControllerKind, Dictionary<ProButtons, string>> ShiftProfiles { get; set; } = [];
+    /// <summary>Weitere Profile, z. B. je Spiel – automatisch aktiv, wenn ihr Programm im Vordergrund ist.</summary>
+    public List<NamedProfile> NamedProfiles { get; set; } = [];
+    /// <summary>Von Hand gewähltes Profil (Name); null = automatisch nach Programm im Vordergrund.</summary>
+    public string? ForcedProfile { get; set; }
+    /// <summary>Automatisch erkanntes Profil (vom Programm im Vordergrund); wird nicht gespeichert.</summary>
+    [JsonIgnore]
+    public string? DetectedProfile { get; set; }
+
+    /// <summary>Stick-Totzone je Controller-Art (fehlt eine Art, gilt <see cref="StickDeadzone"/>).</summary>
+    public Dictionary<ControllerKind, float> Deadzones { get; set; } = [];
+
+    /// <summary>Eigene Werte je Controller-Art (Kennlinie, Trigger, Vibration, Gyro-Maus); fehlende gelten allgemein.</summary>
+    public Dictionary<ControllerKind, ControllerTuning> Tuning { get; set; } = [];
+
+    /// <summary>Gyro-Nullpunkt je Controller (Bluetooth-Adresse), vom Benutzer kalibriert (Rohwerte).</summary>
+    public Dictionary<string, GyroBias> GyroCalibration { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Welcher Joy-Con eines Paars die Bewegungsdaten liefert (an der Switch: rechts).</summary>
+    public GyroSource PairGyroSource { get; set; } = GyroSource.Right;
+    /// <summary>Gyro-Maus: Bildpunkte je Grad Drehung.</summary>
+    public float GyroMouseSpeed { get; set; } = 20f;
+    /// <summary>Nach so vielen Minuten ohne Eingabe trennen (spart Akku); 0 = nie.</summary>
+    public int InactivityMinutes { get; set; }
+
+    /// <summary>Gyro als rechter Stick (Zielen per Bewegung in Spielen ohne Mausunterstützung).</summary>
+    public GyroStickMode GyroStick { get; set; } = GyroStickMode.Off;
+    /// <summary>Drehgeschwindigkeit (°/s), bei der der Stick voll ausschlägt.</summary>
+    public float GyroStickFullSpeed { get; set; } = 150f;
+    /// <summary>Mindestausschlag, sobald sich der Controller dreht (überwindet die Totzone des Spiels), 0–0,4.</summary>
+    public float GyroStickAntiDeadzone { get; set; } = 0.12f;
+    public bool GyroStickInvertY { get; set; }
+
+    /// <summary>
+    /// Gyro-Beschleunigung (wie JoyShockMapper MIN/MAX_GYRO_SENS): bei langsamer Drehung (≤ <see cref="GyroAccelSlow"/>
+    /// °/s) normale Empfindlichkeit, bei schneller (≥ <see cref="GyroAccelFast"/> °/s) das <see cref="GyroAcceleration"/>-
+    /// fache, dazwischen linear. 1 = aus. Gilt für Gyro-Stick und Gyro-Maus.
+    /// </summary>
+    public float GyroAcceleration { get; set; } = 1f;
+    public float GyroAccelSlow { get; set; } = 20f;
+    public float GyroAccelFast { get; set; } = 120f;
+
+    /// <summary>
+    /// Flick-Stick (wie JoyShockMapper FLICK_STICK): Der rechte Stick dreht die Kamera per Maus sofort in die Richtung,
+    /// in die er zeigt; am Rand gedreht dreht sie mit. Für Spiele mit Maussteuerung (Zielen per Gyro, Drehen per Stick).
+    /// </summary>
+    public bool FlickStick { get; set; }
+    /// <summary>Mausbewegung (Bildpunkte/Counts) für eine volle Drehung im Spiel – je Spiel einmal einstellen.</summary>
+    public int FlickCountsPer360 { get; set; } = 3600;
+    /// <summary>Dauer eines Flicks in Sekunden (JoyShockMapper FLICK_TIME).</summary>
+    public float FlickTime { get; set; } = 0.1f;
+
+    /// <summary>
+    /// Spieler-LED und Lichtleiste aus dem Spiel übernehmen: Xbox-Platz, den Windows vergibt, als Spieler-LED;
+    /// DualShock-4-Lichtleiste als HOME-LED (Switch 1 Pro, Joy-Con R) und in der Übersicht.
+    /// </summary>
+    public bool GameLeds { get; set; } = true;
+
+    /// <summary>Stick-Kennlinie: 1 = linear, &gt; 1 = feiner in der Mitte, &lt; 1 = schneller.</summary>
+    public float StickCurve { get; set; } = 1f;
+    /// <summary>Analoge Trigger (GameCube): Totzone am Anfang, 0–0,5.</summary>
+    public float TriggerDeadzone { get; set; } = 0.05f;
+    /// <summary>Analoge Trigger: ab diesem Anteil gilt der Trigger als voll gedrückt, 0,5–1.</summary>
+    public float TriggerFullAt { get; set; } = 1f;
+
+    /// <summary>Dauerfeuer: Wechsel pro Sekunde für Tasten mit „Turbo“.</summary>
+    public float TurboRate { get; set; } = 12f;
+
+    /// <summary>Beim Start auf GitHub nach einer neuen Version suchen.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+    /// <summary>Beim Start auf GitHub nach einer neuen HidHide-Version suchen (Installation nur nach Rückfrage).</summary>
+    public bool CheckHidHideUpdates { get; set; } = true;
+    /// <summary>
+    /// Zuletzt gesehene HidHide-Version. Ändert sie sich (Update = Neuinstallation, dabei geht HidHides Geräteliste
+    /// verloren), werden die Controller neu versteckt.
+    /// </summary>
+    public string? HidHideVersion { get; set; }
+    /// <summary>Wii-Fernbedienung: Zeiger über die Sensorleiste (IR-Kamera) steuert den Mauszeiger.</summary>
+    public bool WiiPointerMouse { get; set; }
+    /// <summary>Hinweis „an der Switch 2 neu koppeln“ wurde schon einmal gezeigt.</summary>
+    public bool ConsoleHintShown { get; set; }
+    /// <summary>Autostart wurde beim ersten Start eingerichtet (danach entscheidet nur noch der Benutzer).</summary>
+    public bool AutostartConfigured { get; set; }
+    /// <summary>Darstellung: "dark" (Standard), "light" oder "system" (wie Windows).</summary>
+    public string? Theme { get; set; }
+    /// <summary>Farbschema: "windows" (Standard, null), "neon", "aurora", "sunset" oder "joycon".</summary>
+    public string? ColorScheme { get; set; }
+    /// <summary>Durchscheinender Fensterhintergrund (Mica, ab Windows 11).</summary>
+    public bool Transparency { get; set; } = true;
+    /// <summary>Controller-Übersicht kompakt: kleinere Karten (Grafik, Akku, Verbindung), mehrere nebeneinander.</summary>
+    public bool CompactCards { get; set; }
+    /// <summary>Controllerbilder in den Karten; aus = reine Live-Tastenfelder.</summary>
+    public bool ShowControllerImages { get; set; } = true;
+    /// <summary>Desktop-Modus: ohne Spiel im Vordergrund steuert der Controller Maus und Tastatur (Standard aus).</summary>
+    public bool DesktopMode { get; set; }
+    /// <summary>Zeigergeschwindigkeit im Desktop-Modus in Prozent (25–300, Standard 100).</summary>
+    public int DesktopPointerSpeed { get; set; } = 100;
+    /// <summary>Kurze Einblendung am Bildschirmrand, wenn ein Controller verbunden wird (Spieler, Name, Akku).</summary>
+    public bool ConnectOverlay { get; set; } = true;
+    /// <summary>Desktop-Widget: kleines Kärtchen mit Controllern, Akku und Ausgabe auf dem Desktop (Standard aus).</summary>
+    public bool DesktopWidget { get; set; }
+    /// <summary>Widget immer im Vordergrund statt nur auf dem Desktop.</summary>
+    public bool WidgetOnTop { get; set; }
+    /// <summary>Widget kompakt: eine Zeile je Controller ohne Verbindung und Ausgabe.</summary>
+    public bool WidgetCompact { get; set; }
+    /// <summary>Deckkraft des Widgets in Prozent (40–100, Standard 95).</summary>
+    public int WidgetOpacity { get; set; } = 95;
+    /// <summary>Position des Widgets (linke obere Ecke, Bildschirmpixel); null = oben rechts.</summary>
+    public int? WidgetX { get; set; }
+    public int? WidgetY { get; set; }
+    // Funkadapter (ESP32/nRF52840) entfernt: Weg verworfen. Alte Felder „UseAdapter“/„AdapterPort“ in settings.json
+    // überliest das Laden (unbekannte Felder werden ignoriert).
+    /// <summary>
+    /// Sprache der Oberfläche: "auto" = wie Windows (ausdrücklich gewählt), null = nie gewählt (ebenfalls wie Windows,
+    /// der Installer darf dann vorgeben), sonst einer der 12 Sprachcodes (de, en, es, fr, it, pt, nl, pl, ru, ja, zh, ko).
+    /// </summary>
+    public string? Language { get; set; }
+
+    /// <summary>Joy-Con 2 als Maus, sobald er auf einer Fläche liegt (wie an der Switch 2).</summary>
+    public bool JoyConMouse { get; set; } = true;
+    /// <summary>Mausgeschwindigkeit (Bildpunkte je Sensorschritt).</summary>
+    public float MouseSpeed { get; set; } = 2.5f; // Sensor ~160 DPI (gemessen) → wie eine 400-DPI-Maus
+    public bool MouseInvertX { get; set; }
+    public bool MouseInvertY { get; set; }
+    /// <summary>Zwei Joy-Con (links + rechts) automatisch zu einem Controller zusammenfassen.</summary>
+    public bool CombineJoyCons { get; set; } = true;
+
+    /// <summary>Bewegungsdaten für Emulatoren bereitstellen (Cemuhook/DSU, 127.0.0.1:26760).</summary>
+    public bool DsuServer { get; set; } = true;
+
+    /// <summary>Kurz „Klick“ vibrieren, wenn der Controller verbunden ist.</summary>
+    public bool ConnectFeedback { get; set; } = true;
+    /// <summary>
+    /// Meldung beim Verbinden/Trennen: SKZ Connect (Standard, zeigt den echten Controller-Namen und schaltet die
+    /// Gerätemeldungen von Windows ab), nur Windows, beide oder keine.
+    /// </summary>
+    public ConnectNotifications ConnectNotify { get; set; } = ConnectNotifications.SkzConnect;
+    /// <summary>
+    /// Bekannte Controller per Tastendruck wieder verbinden (ohne SYNC). Achtung: Läuft das Programm,
+    /// verbindet sich ein bekannter Controller dann mit dem PC statt mit der Switch 2.
+    /// </summary>
+    public bool AutoReconnect { get; set; } = true;
+    /// <summary>
+    /// Switch-1-, Nintendo-Switch-Online- und Wii-Controller im Kopplungsmodus (SYNC) im Hintergrund selbst mit Windows
+    /// koppeln – ohne Umweg über die Windows-Bluetooth-Einstellungen. Sucht nur, solange niemand spielt.
+    /// </summary>
+    public bool AutoPair { get; set; } = true;
+    /// <summary>Controller, die schon einmal verbunden waren (wird automatisch gefüllt).</summary>
+    public List<string> KnownControllers { get; set; } = [];
+    /// <summary>Nur diese Controller annehmen (Bluetooth-Adressen, z. B. "AA:BB:CC:DD:EE:FF"). Leer = alle.</summary>
+    public List<string> AllowedControllers { get; set; } = [];
+    /// <summary>
+    /// Joy-Con, die einzeln verwendet werden sollen (Bluetooth-Adressen). Wird automatisch gepflegt:
+    /// Trennen (quer + SL/SR oder Knopf) trägt ein, Zusammenfügen (L + R oder Knopf) trägt aus.
+    /// </summary>
+    public List<string> SingleJoyCons { get; set; } = [];
+    /// <summary>Per HidHide versteckte Controller (HID-Instanz-IDs) – damit nicht erneut gefragt wird.</summary>
+    public List<string> HiddenDevices { get; set; } = [];
+
+    public bool IsHidden(string instanceId) => Contains(HiddenDevices, instanceId);
+
+    /// <summary>
+    /// Original-Controller automatisch per HidHide vor Spielen und Steam verstecken (Switch 1, NSO, USB, Kabel-Pads) –
+    /// sonst sehen Steam und viele Spiele sie doppelt (Original + virtueller Controller).
+    /// </summary>
+    public bool HideFromGames { get; set; } = true;
+
+    /// <summary>Ausgabeart je Controller (Adresse → Xbox 360 / DualShock 4); fehlt der Eintrag, gilt <see cref="OutputMode"/>.</summary>
+    public Dictionary<string, OutputMode> ControllerOutputs { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Eigene Ausgabeart eines Controllers (null = wie allgemein eingestellt).</summary>
+    public OutputMode? OutputFor(string? address) =>
+        address is not null && ControllerOutputs.TryGetValue(address, out var mode) ? mode : null;
+
+    /// <summary>Ausgabeart eines Controllers setzen; null = allgemeine Einstellung. Neue Kopie (andere Threads lesen).</summary>
+    public void SetOutput(string address, OutputMode? mode)
+    {
+        var copy = new Dictionary<string, OutputMode>(ControllerOutputs, StringComparer.OrdinalIgnoreCase);
+        if (mode is { } m)
+            copy[address] = m;
+        else
+            copy.Remove(address);
+        ControllerOutputs = copy;
+    }
+
+    /// <summary>Einzelne Joy-Con, die hochkant statt quer gehalten werden (Bluetooth-Adressen).</summary>
+    public List<string> UprightJoyCons { get; set; } = [];
+
+    /// <summary>
+    /// Übernommene Kopplungsdaten (von der Switch-SD-Karte oder einem anderen PC): welcher Controller an welchen
+    /// Host gebunden ist. Nur zur Anzeige und für den Export – Schlüssel werden hier nie gespeichert.
+    /// </summary>
+    public List<PairingNote> ImportedPairings { get; set; } = [];
+
+    /// <summary>Beim Einstecken einer Switch-SD-Karte anbieten, die Kopplungsdaten zu übernehmen.</summary>
+    public bool SwitchCardHint { get; set; } = true;
+
+    /// <summary>Eigene Namen je Controller (Adresse → Name), z. B. „Lenas Joy-Con“.</summary>
+    public Dictionary<string, string> ControllerNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Eigene Stick-Kalibrierung (geführt gemessen) je Controller und Stick – Schlüssel „Adresse|L“ bzw. „Adresse|R“.
+    /// Ersetzt die Werkswerte des Controllers; in den Controller selbst wird nichts geschrieben.
+    /// </summary>
+    public Dictionary<string, StickCalibration> StickCalibrations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public static string StickKey(string address, bool left) => $"{address}|{(left ? "L" : "R")}";
+
+    /// <summary>Eigene Kalibrierung eines Sticks (null = Werkswerte).</summary>
+    public StickCalibration? StickCalibrationFor(string? address, bool left) =>
+        address is not null && StickCalibrations.TryGetValue(StickKey(address, left), out var c) ? c : null;
+
+    /// <summary>Eigene Kalibrierung setzen bzw. mit null entfernen. Neue Kopie, weil andere Threads gleichzeitig lesen.</summary>
+    public void SetStickCalibration(string address, bool left, StickCalibration? calibration)
+    {
+        var copy = new Dictionary<string, StickCalibration>(StickCalibrations, StringComparer.OrdinalIgnoreCase);
+        if (calibration is { } c)
+            copy[StickKey(address, left)] = c;
+        else
+            copy.Remove(StickKey(address, left));
+        StickCalibrations = copy;
+    }
+
+    /// <summary>Gewünschter Spielerplatz je Controller (Adresse → 0–7); wird beim Verbinden bevorzugt.</summary>
+    public Dictionary<string, int> PlayerSlots { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Art je Controller (Bluetooth-Adresse → Art), beim Verbinden gemerkt – für Exporte (z. B. ESP32).</summary>
+    public Dictionary<string, ControllerKind> ControllerKinds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Art eines Controllers merken; true = geändert (dann speichern). Neue Kopie, weil andere Threads lesen.</summary>
+    public bool RememberKind(string address, ControllerKind kind)
+    {
+        if (kind == ControllerKind.Unknown || !BtAddress.TryNormalize(address, out var a)
+            || ControllerKinds.TryGetValue(a, out var known) && known == kind)
+            return false;
+        ControllerKinds = new Dictionary<string, ControllerKind>(ControllerKinds, StringComparer.OrdinalIgnoreCase) { [a] = kind };
+        return true;
+    }
+
+    /// <summary>Eigener Name eines Controllers (null = keiner).</summary>
+    public string? NameFor(string? address) =>
+        address is not null && ControllerNames.TryGetValue(address, out var name) && !string.IsNullOrWhiteSpace(name) ? name : null;
+
+    /// <summary>Namen setzen; leer = entfernen. Neue Kopie, weil andere Threads gleichzeitig lesen.</summary>
+    public void SetName(string address, string? name)
+    {
+        var copy = new Dictionary<string, string>(ControllerNames, StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(name))
+            copy.Remove(address);
+        else
+            copy[address] = name.Trim().Length > 40 ? name.Trim()[..40] : name.Trim();
+        ControllerNames = copy;
+    }
+
+    /// <summary>Gewünschter Spielerplatz eines Controllers (null = keiner).</summary>
+    public int? SlotFor(string? address) =>
+        address is not null && PlayerSlots.TryGetValue(address, out int slot) && slot is >= 0 and < 8 ? slot : null;
+
+    /// <summary>Spielerplatz merken. Neue Kopie, weil andere Threads gleichzeitig lesen.</summary>
+    public void SetSlot(string address, int slot) =>
+        PlayerSlots = new Dictionary<string, int>(PlayerSlots, StringComparer.OrdinalIgnoreCase) { [address] = Math.Clamp(slot, 0, 7) };
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        // Enum-Werte als Namen; unbekannte Namen (neuere Version, Tippfehler) verwirft Sanitized einzeln, statt dass
+        // die ganze Datei unlesbar wird.
+        Converters = { new TolerantEnumConverterFactory() },
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+    };
+
+    /// <summary>Sicherung der vorletzten gespeicherten Fassung (wird beim Speichern ersetzt).</summary>
+    public static string BackupPath(string path) => path + ".bak";
+
+    /// <summary>
+    /// Unlesbare Dateien vom Laden (volle Pfade), die <see cref="Save"/> vor dem ersten Überschreiben wegsichert
+    /// (siehe <see cref="KeepUnreadable"/>).
+    /// </summary>
+    private readonly List<string> _unreadable = [];
+
+    public static Settings Load(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                return Parse(File.ReadAllText(path));
+        }
+        catch (Exception e) when (IsReadError(e))
+        {
+            // Kaputte Datei (z. B. Stromausfall beim Speichern einer älteren Version oder von Hand bearbeitet): die
+            // Sicherung nehmen, sonst mit Standardwerten weiterlaufen. Überschrieben wird die unlesbare Datei erst beim
+            // nächsten Speichern – und erst, nachdem Save sie daneben gesichert hat.
+            string full = Path.GetFullPath(path), backup = BackupPath(full);
+            try
+            {
+                if (File.Exists(backup))
+                {
+                    var restored = Parse(File.ReadAllText(backup));
+                    restored.RestoredFromBackup = true;
+                    restored._unreadable.Add(full);
+                    return restored;
+                }
+            }
+            catch (Exception backupError) when (IsReadError(backupError))
+            {
+            }
+            var defaults = new Settings { LoadError = e.Message };
+            defaults._unreadable.Add(full);
+            if (File.Exists(backup))
+                defaults._unreadable.Add(backup); // ebenfalls unlesbar – sonst wäre sie oben geladen worden
+            return defaults;
+        }
+        var fresh = new Settings();
+        try
+        {
+            fresh.Save(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Nicht beschreibbar: trotzdem mit Standardwerten starten.
+        }
+        return fresh;
+    }
+
+    private static Settings Parse(string json) =>
+        (JsonSerializer.Deserialize<Settings>(json, JsonOptions) ?? throw new JsonException("leere Einstellungen")).Sanitized();
+
+    /// <summary>
+    /// Fehler, an denen eine Datei als unlesbar gilt (statt den Start abstürzen zu lassen): kaputtes JSON, kein Zugriff,
+    /// und Ausnahmen beim Aufräumen von Hand bearbeiteter Inhalte (Argument/InvalidOperation).
+    /// </summary>
+    private static bool IsReadError(Exception e) =>
+        e is JsonException or IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException;
+
+    /// <summary>
+    /// Sicher speichern: erst in eine temporäre Datei schreiben, dann in einem Schritt austauschen (die bisherige Fassung
+    /// wird zur Sicherung <see cref="BackupPath"/>). So bleibt bei Absturz oder Stromausfall immer eine vollständige
+    /// Datei übrig – vorher konnte eine halb geschriebene settings.json alle Profile und Belegungen kosten.
+    /// War die Datei beim Laden unlesbar, wird sie vorher einmalig gesichert (<see cref="KeepUnreadable"/>).
+    /// </summary>
+    public void Save(string path)
+    {
+        KeepUnreadable();
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        string temp = path + ".tmp";
+        using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+        using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false)))
+        {
+            writer.Write(JsonSerializer.Serialize(this, JsonOptions));
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
+        }
+        if (File.Exists(path))
+        {
+            try
+            {
+                File.Replace(temp, path, BackupPath(path), ignoreMetadataErrors: true);
+                return;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+            {
+                // Manche Laufwerke (z. B. Netzwerk) können Replace nicht: Sicherung kopieren, dann ersetzen.
+                File.Copy(path, BackupPath(path), overwrite: true);
+            }
+        }
+        File.Move(temp, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// Vor dem ersten Speichern nach einem Ladefehler (auch wenn stattdessen die Sicherung geladen wurde) die unlesbare
+    /// Datei einmalig daneben kopieren:
+    /// „settings.json.unlesbar-JJJJMMTT-hhmmss“, eine ebenfalls unlesbare Sicherung als „settings.json.bak.unlesbar-…“.
+    /// Ohne das schöbe Save sie nach .bak, und spätestens beim zweiten Speichern wären Profile, Belegungen, Namen und
+    /// Kalibrierungen weg – etwa bei einem Tippfehler in einer von Hand bearbeiteten Datei. Danach wird ganz normal
+    /// gespeichert (sonst könnte die App nie mehr speichern). Klappt das Kopieren nicht, wirft Save, ohne etwas zu
+    /// überschreiben; der nächste Versuch sichert erneut.
+    /// </summary>
+    private void KeepUnreadable()
+    {
+        while (_unreadable.Count > 0)
+        {
+            string file = _unreadable[0];
+            if (File.Exists(file))
+            {
+                string copy = UnreadableName(file);
+                File.Copy(file, copy);
+                UnreadableCopy ??= copy;
+            }
+            _unreadable.RemoveAt(0);
+        }
+    }
+
+    /// <summary>Freier Name für die Kopie einer unlesbaren Datei: „Datei.unlesbar-JJJJMMTT-hhmmss“, notfalls mit „-2“ usw.</summary>
+    private static string UnreadableName(string file)
+    {
+        string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        string name = $"{file}.unlesbar-{stamp}";
+        for (int i = 2; File.Exists(name); i++)
+            name = $"{file}.unlesbar-{stamp}-{i}";
+        return name;
+    }
+
+    /// <summary>Übernimmt alle Werte aus <paramref name="other"/>.</summary>
+    public void CopyFrom(Settings other)
+    {
+        OutputMode = other.OutputMode;
+        Layout = other.Layout;
+        RumbleEnabled = other.RumbleEnabled;
+        RumbleStrength = other.RumbleStrength;
+        StickDeadzone = other.StickDeadzone;
+        Remap = new Dictionary<ProButtons, ExtraButtonTarget>(other.Remap);
+        Profiles = other.Profiles.ToDictionary(p => p.Key, p => new Dictionary<ProButtons, string>(p.Value));
+        ShiftProfiles = other.ShiftProfiles.ToDictionary(p => p.Key, p => new Dictionary<ProButtons, string>(p.Value));
+        NamedProfiles = [.. other.NamedProfiles];
+        ForcedProfile = other.ForcedProfile;
+        Deadzones = new Dictionary<ControllerKind, float>(other.Deadzones);
+        Tuning = new Dictionary<ControllerKind, ControllerTuning>(other.Tuning);
+        GyroCalibration = new Dictionary<string, GyroBias>(other.GyroCalibration, StringComparer.OrdinalIgnoreCase);
+        PairGyroSource = other.PairGyroSource;
+        GyroMouseSpeed = other.GyroMouseSpeed;
+        InactivityMinutes = other.InactivityMinutes;
+        GyroStick = other.GyroStick;
+        GyroStickFullSpeed = other.GyroStickFullSpeed;
+        GyroStickAntiDeadzone = other.GyroStickAntiDeadzone;
+        GyroStickInvertY = other.GyroStickInvertY;
+        GyroAcceleration = other.GyroAcceleration;
+        GyroAccelSlow = other.GyroAccelSlow;
+        GyroAccelFast = other.GyroAccelFast;
+        FlickStick = other.FlickStick;
+        FlickCountsPer360 = other.FlickCountsPer360;
+        FlickTime = other.FlickTime;
+        GameLeds = other.GameLeds;
+        StickCurve = other.StickCurve;
+        TriggerDeadzone = other.TriggerDeadzone;
+        TriggerFullAt = other.TriggerFullAt;
+        TurboRate = other.TurboRate;
+        CheckForUpdates = other.CheckForUpdates;
+        CheckHidHideUpdates = other.CheckHidHideUpdates;
+        HidHideVersion = other.HidHideVersion;
+        WiiPointerMouse = other.WiiPointerMouse;
+        ConsoleHintShown = other.ConsoleHintShown;
+        AutostartConfigured = other.AutostartConfigured;
+        Theme = other.Theme;
+        ColorScheme = other.ColorScheme;
+        Transparency = other.Transparency;
+        CompactCards = other.CompactCards;
+        ShowControllerImages = other.ShowControllerImages;
+        DesktopMode = other.DesktopMode;
+        DesktopPointerSpeed = other.DesktopPointerSpeed;
+        ConnectOverlay = other.ConnectOverlay;
+        DesktopWidget = other.DesktopWidget;
+        WidgetOnTop = other.WidgetOnTop;
+        WidgetCompact = other.WidgetCompact;
+        WidgetOpacity = other.WidgetOpacity;
+        WidgetX = other.WidgetX;
+        WidgetY = other.WidgetY;
+        Language = other.Language;
+        UprightJoyCons = [.. other.UprightJoyCons];
+        HiddenDevices = [.. other.HiddenDevices];
+        HideFromGames = other.HideFromGames;
+        ControllerOutputs = new Dictionary<string, OutputMode>(other.ControllerOutputs, StringComparer.OrdinalIgnoreCase);
+        JoyConMouse = other.JoyConMouse;
+        MouseSpeed = other.MouseSpeed;
+        MouseInvertX = other.MouseInvertX;
+        MouseInvertY = other.MouseInvertY;
+        CombineJoyCons = other.CombineJoyCons;
+        DsuServer = other.DsuServer;
+        ConnectFeedback = other.ConnectFeedback;
+        ConnectNotify = other.ConnectNotify;
+        AutoReconnect = other.AutoReconnect;
+        AutoPair = other.AutoPair;
+        KnownControllers = [.. other.KnownControllers];
+        AllowedControllers = [.. other.AllowedControllers];
+        SingleJoyCons = [.. other.SingleJoyCons];
+        ImportedPairings = [.. other.ImportedPairings];
+        SwitchCardHint = other.SwitchCardHint;
+        ControllerNames = new Dictionary<string, string>(other.ControllerNames, StringComparer.OrdinalIgnoreCase);
+        ControllerKinds = new Dictionary<string, ControllerKind>(other.ControllerKinds, StringComparer.OrdinalIgnoreCase);
+        PlayerSlots = new Dictionary<string, int>(other.PlayerSlots, StringComparer.OrdinalIgnoreCase);
+        StickCalibrations = new Dictionary<string, StickCalibration>(other.StickCalibrations, StringComparer.OrdinalIgnoreCase);
+        // Unlesbare Datei vom Laden mitnehmen (z. B. neu geladen, aber nur die Sicherung war lesbar): wer die Werte
+        // übernimmt und dann speichert, sichert sie vorher – siehe KeepUnreadable.
+        KeepUnreadableOf(other);
+    }
+
+    /// <summary>
+    /// Für ein verworfenes Neuladen (<paramref name="rejected"/> mit <see cref="LoadError"/> oder
+    /// <see cref="RestoredFromBackup"/>): Die laufenden Werte bleiben, aber die dabei unlesbare Datei sichert das nächste
+    /// <see cref="Save"/> vorher, statt sie nach .bak zu schieben und beim übernächsten Speichern zu verlieren (z. B. ein
+    /// Tippfehler beim Bearbeiten von Hand, während die App läuft). <see cref="CopyFrom"/> macht das von selbst.
+    /// </summary>
+    public void KeepUnreadableOf(Settings rejected)
+    {
+        foreach (string file in rejected._unreadable)
+        {
+            if (!_unreadable.Contains(file))
+                _unreadable.Add(file);
+        }
+    }
+
+    [JsonIgnore]
+    public string? LoadError { get; private set; }
+
+    /// <summary>
+    /// settings.json war unlesbar, geladen wurde die Sicherung <see cref="BackupPath"/> – die Fassung vor dem letzten
+    /// Speichern; was zuletzt gespeichert wurde, fehlt also. Die Apps sollten beim Start darauf hinweisen. Beim Neuladen
+    /// im Betrieb ist der laufende Stand neuer als die Sicherung: dann besser wie bei <see cref="LoadError"/> verwerfen
+    /// (<see cref="KeepUnreadableOf"/>), statt per <see cref="CopyFrom"/> auf die Sicherung zurückzufallen.
+    /// </summary>
+    [JsonIgnore]
+    public bool RestoredFromBackup { get; private set; }
+
+    /// <summary>Kopie der beim Laden unlesbaren Datei, die <see cref="Save"/> vor dem ersten Überschreiben angelegt hat; sonst null.</summary>
+    [JsonIgnore]
+    public string? UnreadableCopy { get; private set; }
+
+    public bool IsKnown(string address) =>
+        KnownControllers.Any(a => string.Equals(a.Trim(), address, StringComparison.OrdinalIgnoreCase));
+
+    public bool IsAllowed(string address) =>
+        AllowedControllers.Count == 0
+        || AllowedControllers.Any(a => string.Equals(a.Trim(), address, StringComparison.OrdinalIgnoreCase));
+
+    public bool IsSingleJoyCon(string? address) => Contains(SingleJoyCons, address);
+
+    /// <summary>Merkt sich, ob ein Joy-Con einzeln verwendet wird. Gibt true zurück, wenn sich etwas geändert hat.</summary>
+    public bool SetSingleJoyCon(string address, bool single)
+    {
+        if (single == IsSingleJoyCon(address))
+            return false;
+        SingleJoyCons = Toggled(SingleJoyCons, address, single);
+        return true;
+    }
+
+    public bool IsUprightJoyCon(string? address) => Contains(UprightJoyCons, address);
+
+    public void SetUprightJoyCon(string address, bool upright)
+    {
+        if (upright != IsUprightJoyCon(address))
+            UprightJoyCons = Toggled(UprightJoyCons, address, upright);
+    }
+
+    private static bool Contains(List<string> list, string? address) =>
+        address is not null && list.Any(a => string.Equals(a.Trim(), address, StringComparison.OrdinalIgnoreCase));
+
+    private static List<string> Toggled(List<string> list, string address, bool add) => add
+        ? [.. list, address]
+        : [.. list.Where(a => !string.Equals(a.Trim(), address, StringComparison.OrdinalIgnoreCase))];
+
+    /// <summary>Totzone für eine Controller-Art (eigene oder die allgemeine).</summary>
+    public float DeadzoneFor(ControllerKind kind) => Deadzones.TryGetValue(kind, out float d) ? d : StickDeadzone;
+
+    private ControllerTuning? TuningFor(ControllerKind kind) => Tuning.GetValueOrDefault(kind);
+    public float StickCurveFor(ControllerKind kind) => TuningFor(kind)?.StickCurve ?? StickCurve;
+    public float TriggerDeadzoneFor(ControllerKind kind) => TuningFor(kind)?.TriggerDeadzone ?? TriggerDeadzone;
+    public float TriggerFullAtFor(ControllerKind kind) => TuningFor(kind)?.TriggerFullAt ?? TriggerFullAt;
+    public float RumbleStrengthFor(ControllerKind kind) => TuningFor(kind)?.RumbleStrength ?? RumbleStrength;
+    public float GyroMouseSpeedFor(ControllerKind kind) => TuningFor(kind)?.GyroMouseSpeed ?? GyroMouseSpeed;
+
+    /// <summary>Eigene Werte einer Controller-Art ändern; ohne eigene Werte wird der Eintrag entfernt.</summary>
+    public void SetTuning(ControllerKind kind, Func<ControllerTuning, ControllerTuning> change)
+    {
+        var updated = change(TuningFor(kind) ?? new ControllerTuning());
+        // Neue Kopie statt Änderung: der Bluetooth-Thread liest gleichzeitig.
+        var copy = new Dictionary<ControllerKind, ControllerTuning>(Tuning);
+        if (updated.IsEmpty)
+            copy.Remove(kind);
+        else
+            copy[kind] = updated;
+        Tuning = copy;
+    }
+
+    /// <summary>Gerade geltendes benanntes Profil (von Hand gewählt oder per Programm erkannt); null = Standard.</summary>
+    public NamedProfile? CurrentProfile()
+    {
+        string? name = ForcedProfile ?? DetectedProfile;
+        return name is null ? null : NamedProfiles.FirstOrDefault(p => p.Name == name);
+    }
+
+    /// <summary>Gyro-Nullpunkt eines Controllers: vom Benutzer kalibriert, sonst der Werkswert.</summary>
+    public GyroBias GyroBiasFor(string? address, GyroBias factory) =>
+        address is not null && GyroCalibration.TryGetValue(address, out var bias) ? bias : factory;
+
+    /// <summary>
+    /// Belegungen ohne null-Einträge (von Hand bearbeitete Dateien) und ohne unbekannte Controller-Arten oder Tasten
+    /// (z. B. aus einer neueren Version).
+    /// </summary>
+    private static Dictionary<ControllerKind, Dictionary<ProButtons, string>> Clean(Dictionary<ControllerKind, Dictionary<ProButtons, string>>? maps) =>
+        maps?.Where(m => m.Value is not null && Enum.IsDefined(m.Key))
+            .ToDictionary(m => m.Key, m => m.Value.Where(e => e.Value is not null && Enum.IsDefined(e.Key)).ToDictionary(e => e.Key, e => e.Value)) ?? [];
+
+    /// <summary>
+    /// Neues Wörterbuch mit Adressen als Schlüssel, ohne Rücksicht auf Groß-/Kleinschreibung. Beim Einlesen sind
+    /// „aa:bb:…“ und „AA:BB:…“ noch zwei Schlüssel (von Hand bearbeitete Datei): Dann gilt der spätere gültige Eintrag,
+    /// statt dass ToDictionary mit einer ArgumentException den Start verhindert.
+    /// </summary>
+    private static Dictionary<string, T> IgnoreCase<T>(IEnumerable<KeyValuePair<string, T>>? entries)
+    {
+        var result = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, value) in entries ?? [])
+        {
+            if (key is not null)
+                result[key] = value;
+        }
+        return result;
+    }
+
+    private Settings Sanitized()
+    {
+        RumbleStrength = float.IsFinite(RumbleStrength) ? Math.Clamp(RumbleStrength, 0f, 1f) : 0.8f;
+        StickDeadzone = float.IsFinite(StickDeadzone) ? Math.Clamp(StickDeadzone, 0f, 0.5f) : 0.06f;
+        MouseSpeed = float.IsFinite(MouseSpeed) ? Math.Clamp(MouseSpeed, 0.1f, 10f) : 2.5f;
+        DesktopPointerSpeed = Math.Clamp(DesktopPointerSpeed, 25, 300);
+        WidgetOpacity = Math.Clamp(WidgetOpacity, 40, 100);
+        AllowedControllers ??= [];
+        KnownControllers ??= [];
+        SingleJoyCons ??= [];
+        UprightJoyCons ??= [];
+        HiddenDevices ??= [];
+        ImportedPairings = ImportedPairings?.Where(p => p?.Address is not null).ToList() ?? [];
+        // Unbekannte Tasten oder Ziele (neuere Version, Tippfehler) kommen als ungültiger Wert an: nur sie weglassen.
+        Remap = Remap?.Where(r => Enum.IsDefined(r.Key) && Enum.IsDefined(r.Value)).ToDictionary(r => r.Key, r => r.Value) ?? [];
+        Profiles ??= [];
+        ShiftProfiles ??= [];
+        NamedProfiles ??= [];
+        Deadzones = Deadzones?.Where(d => Enum.IsDefined(d.Key)).ToDictionary(d => d.Key, d => d.Value) ?? [];
+        GyroCalibration = IgnoreCase(GyroCalibration);
+        GyroMouseSpeed = float.IsFinite(GyroMouseSpeed) ? Math.Clamp(GyroMouseSpeed, 1f, 100f) : 20f;
+        InactivityMinutes = Math.Clamp(InactivityMinutes, 0, 240);
+        static float Fin(float v, float min, float max, float fallback) => float.IsFinite(v) ? Math.Clamp(v, min, max) : fallback;
+        GyroStickFullSpeed = Fin(GyroStickFullSpeed, 20f, 1000f, 150f);
+        GyroStickAntiDeadzone = Fin(GyroStickAntiDeadzone, 0f, 0.4f, 0.12f);
+        GyroAcceleration = Fin(GyroAcceleration, 1f, 4f, 1f);
+        GyroAccelSlow = Fin(GyroAccelSlow, 0f, 500f, 20f);
+        GyroAccelFast = Fin(GyroAccelFast, GyroAccelSlow + 1f, 1000f, Math.Max(GyroAccelSlow + 1f, 120f));
+        FlickCountsPer360 = Math.Clamp(FlickCountsPer360, 100, 100_000);
+        FlickTime = Fin(FlickTime, 0f, 0.5f, 0.1f);
+        StickCurve = Fin(StickCurve, 0.3f, 3f, 1f);
+        TriggerDeadzone = Fin(TriggerDeadzone, 0f, 0.5f, 0.05f);
+        TriggerFullAt = Fin(TriggerFullAt, 0.5f, 1f, 1f);
+        TurboRate = Fin(TurboRate, 2f, 30f, 12f);
+        if (Theme is not (null or "dark" or "light" or "system"))
+            Theme = null;
+        if (Language is not (null or "auto" or "de" or "en" or "es" or "fr" or "it" or "pt" or "nl" or "pl" or "ru" or "ja" or "zh" or "ko"))
+            Language = null;
+        // Unbekannte Namen oder Zahlen (siehe TolerantEnumConverter) → Standardwert.
+        if (!Enum.IsDefined(GyroStick))
+            GyroStick = GyroStickMode.Off;
+        if (!Enum.IsDefined(Layout))
+            Layout = FaceButtonLayout.Xbox;
+        if (!Enum.IsDefined(PairGyroSource))
+            PairGyroSource = GyroSource.Right;
+        if (!Enum.IsDefined(ConnectNotify))
+            ConnectNotify = ConnectNotifications.SkzConnect;
+        UprightJoyCons.RemoveAll(a => a is null);
+        NamedProfiles.RemoveAll(p => p is null || string.IsNullOrWhiteSpace(p.Name));
+        NamedProfiles = NamedProfiles.Select(p => p with
+        {
+            Programs = p.Programs?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? [],
+            Buttons = Clean(p.Buttons),
+            ShiftButtons = Clean(p.ShiftButtons),
+        }).ToList();
+        ShiftProfiles = Clean(ShiftProfiles);
+        Tuning = Tuning?.Where(t => t.Value is not null && Enum.IsDefined(t.Key))
+            .ToDictionary(t => t.Key, t => t.Value.Sanitized()) ?? [];
+        foreach (var kind in Deadzones.Keys.ToList())
+            Deadzones[kind] = float.IsFinite(Deadzones[kind]) ? Math.Clamp(Deadzones[kind], 0f, 0.5f) : StickDeadzone;
+        // Von Hand bearbeitete Dateien können null-Einträge enthalten ("…": null) – IsHidden & Co. rufen Trim() auf.
+        AllowedControllers.RemoveAll(a => a is null);
+        KnownControllers.RemoveAll(a => a is null);
+        SingleJoyCons.RemoveAll(a => a is null);
+        HiddenDevices.RemoveAll(a => a is null);
+        Profiles = Clean(Profiles);
+        // Adress-Wörterbücher: Groß-/Kleinschreibungs-Dubletten zusammenführen (siehe IgnoreCase).
+        ControllerNames = IgnoreCase(ControllerNames?.Where(n => !string.IsNullOrWhiteSpace(n.Value))
+            .Select(n => KeyValuePair.Create(n.Key, n.Value.Trim())));
+        PlayerSlots = IgnoreCase(PlayerSlots?.Where(s => s.Value is >= 0 and < 8));
+        ControllerKinds = IgnoreCase(ControllerKinds?.Where(k => Enum.IsDefined(k.Value) && k.Value != ControllerKind.Unknown));
+        ControllerOutputs = IgnoreCase(ControllerOutputs?.Where(o => Enum.IsDefined(o.Value)));
+        if (!Enum.IsDefined(OutputMode))
+            OutputMode = OutputMode.Xbox360;
+        // Nur plausible Kalibrierungen (Mitte im 12-Bit-Bereich, Ausschlag 200–2047) – sonst lieber die Werkswerte.
+        static bool Plausible(AxisCalibration a) => a.Neutral is > 0 and < 4095 && a.Max is >= 200 and <= 2047 && a.Min is >= 200 and <= 2047;
+        StickCalibrations = IgnoreCase(StickCalibrations?.Where(c => Plausible(c.Value.X) && Plausible(c.Value.Y)));
+        return this;
+    }
+}
+
+/// <summary>Ein übernommener Kopplungseintrag: Controller-Adresse, Name, Host-Adresse, Herkunft ("Switch"/"SKZ Connect").</summary>
+public sealed record PairingNote(string Address, string? Name, string? HostAddress, string? Source);
+
+/// <summary>Für jedes Enum einen <see cref="TolerantEnumConverter{T}"/> (Werte und Wörterbuch-Schlüssel).</summary>
+internal sealed class TolerantEnumConverterFactory : JsonConverterFactory
+{
+    public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum;
+
+    public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+        (JsonConverter)Activator.CreateInstance(typeof(TolerantEnumConverter<>).MakeGenericType(typeToConvert))!;
+}
+
+/// <summary>
+/// Enum-Werte als Namen speichern (wie <see cref="JsonStringEnumConverter"/>: "GL": "LS"), beim Lesen aber nachsichtig.
+/// Ein unbekannter Name – eine Datei aus einer neueren Version mit neuer Controller-Art oder ein Tippfehler – ergibt
+/// <see cref="Unknown"/> statt einer JsonException, die die ganze settings.json unlesbar machen würde. Zahlen werden wie
+/// bisher angenommen. <see cref="Settings"/> verwirft ungültige Werte danach beim Aufräumen einzeln
+/// (Wörterbucheintrag weg bzw. Standardwert).
+/// </summary>
+internal sealed class TolerantEnumConverter<T> : JsonConverter<T> where T : struct, Enum
+{
+    /// <summary>„Unbekannt“: alle Bits gesetzt (−1 bzw. 0xFFFFFFFF) – in keinem Enum der Einstellungen vergeben.</summary>
+    internal static readonly T Unknown = (T)Enum.ToObject(typeof(T), -1L);
+
+    private static readonly bool IsFlags = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
+
+    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.String:
+                return Parse(reader.GetString());
+            case JsonTokenType.Number when reader.TryGetInt64(out long number):
+                // Nur Zahlen, die in den Enum passen (sonst würde z. B. 2^32 + 1 still zu 1).
+                var value = (T)Enum.ToObject(typeof(T), number);
+                return Convert.ToInt64(value, CultureInfo.InvariantCulture) == number ? value : Unknown;
+            default:
+                reader.Skip(); // null, true, Objekt … – ganz überspringen
+                return Unknown;
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
+
+    public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        Parse(reader.GetString());
+
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        writer.WritePropertyName(value.ToString());
+
+    /// <summary>
+    /// Name (Groß/Klein egal) oder Zahl als Text; sonst <see cref="Unknown"/>. Mehrere Namen („A, B“) nur bei
+    /// Flags – Enum.TryParse verknüpfte sie sonst stillschweigend zu einem anderen Wert (A | B = X).
+    /// </summary>
+    private static T Parse(string? text) =>
+        text is not null && (IsFlags || !text.Contains(',')) && Enum.TryParse(text, ignoreCase: true, out T value) ? value : Unknown;
+}

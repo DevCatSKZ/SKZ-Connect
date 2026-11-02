@@ -1,0 +1,568 @@
+# Funktionen und Verhalten
+
+Jede Funktion mit ihrem genauen Verhalten. Zahlen (Zeiten, Grenzwerte) sind die im Code verwendeten Werte;
+Fundstellen in Klammern (`Datei`/`Klasse`), damit sich Details schnell nachschlagen lassen.
+
+---
+
+## 1. Unterstützte Controller
+
+| Controller | Verbindung | Eingaben | Ausgaben an den Controller |
+|---|---|---|---|
+| Switch 2 Pro Controller | BLE (eigene GATT-Dienste), USB (WinUSB + HID) | Tasten inkl. C, GL/GR, Sticks, Gyro/Beschl., Akku | HD-Rumble, Spieler-LEDs, „Verbunden“-Klick |
+| Joy-Con 2 (L/R) | BLE | wie oben + optischer Maussensor, Charging Grip (GL/GR) | HD-Rumble (1 Motor), LEDs |
+| GameCube-Controller (Switch 2) | BLE, USB | Tasten, Sticks, **analoge Trigger** | Motor an/aus (USB: über Fehlerdiffusion abgestuft), LEDs |
+| Switch Pro Controller (Switch 1) | Bluetooth Classic HID, USB | Tasten, Sticks, Gyro, Akku, NFC | HD-Rumble, LEDs |
+| Joy-Con (L/R) (Switch 1) | Bluetooth Classic HID | Tasten, Stick, Gyro, NFC (R), IR-Kamera (R), Ring-Con (R) | HD-Rumble, LEDs |
+| NES, SNES, N64, Mega Drive (NSO) | Bluetooth Classic HID (Switch-1-Protokoll) | Tasten, N64-Stick | LEDs |
+| Wii-Fernbedienung (+ Plus) | Bluetooth Classic HID | Tasten, Beschl., IR-Zeiger, MotionPlus, Nunchuk, Classic | Vibration, LEDs |
+| Wii U Pro Controller | Bluetooth Classic HID (Wii-Protokoll) | Tasten, 2 Sticks, Akku | Vibration, LEDs |
+| Kabel-Pads HORI/PowerA/PDP | USB-HID (einfaches Format) | Tasten, Sticks, Steuerkreuz | – |
+| Nachbauten im Switch-Modus (8BitDo, „Lic Pro Controller“) | wie Switch Pro Controller | wie Pro Controller, soweit unterstützt | wie Pro Controller |
+| DualShock 4 (Sony) | USB und Bluetooth Classic HID (VID 054C, PID 05C4/09CC/0BA0) | Tasten, Touchpad-Klick, Sticks, analoge Trigger, Gyro/Beschl., Akku | Vibration, Lichtleiste |
+| DualSense / DualSense Edge (Sony) | USB und Bluetooth Classic HID (VID 054C, PID 0CE6/0DF2) | wie DualShock 4 + Mikro-Taste, Edge-Backtasten | Vibration, Lichtleiste, Spieler-LEDs, Mikro-LED |
+| Xbox-Controller (360, One, Series, Elite, XInput-kompatible) | beliebig (USB, Bluetooth, Xbox-Wireless-Adapter) – über **XInput** | Tasten, Sticks, analoge Trigger, Guide-Taste, Akku | Vibration direkt über XInput; **nativ**, kein virtueller Controller |
+
+Bis zu **8 Spieler** gleichzeitig (`ControllerManager.MaxPlayers`). Der 9. Controller wird abgewiesen (Einblendung
+je Gerät nur einmal) und auf jedem Weg (Bluetooth LE, Switch 1/NSO/Wii, Kabel-Pads, Sony, XInput, USB) erst nach 10 s
+erneut versucht – ebenso, wenn ViGEm keinen virtuellen Controller anlegen kann.
+
+---
+
+## 2. Verbinden und Koppeln
+
+### 2.1 Switch-2-Controller (Bluetooth LE)
+- SKZ Connect sucht dauerhaft **aktiv** nach BLE-Werbung mit Herstellerkennung **0x0553** (Nintendo) und erkennt
+  die Art an der Produkt-ID in der Werbung (`Advertisement.Kind`).
+- **SYNC** (Host-Adresse in der Werbung leer): Controller wird immer verbunden und danach **mit dem PC gekoppelt**
+  (Nintendo-Verfahren, Befehl 0x15 – nur wenn „Per Tastendruck verbinden“ an ist und er nicht schon mit diesem PC
+  gekoppelt ist). Danach reicht ein Tastendruck. Achtung: Der Controller merkt sich **genau einen** Host – an der
+  Switch 2 muss er danach einmal neu per SYNC gekoppelt werden (einmaliger Hinweis).
+- **Tastendruck** (Werbung mit Host-Adresse): verbunden wird nur, wenn die Host-Adresse die des PC-Adapters ist
+  (sonst gehört der Controller zu einer Konsole und würde ablehnen).
+- Eben von Hand getrennte Controller werden erst wieder verbunden, wenn sie ≥ 3 s nicht mehr geworben haben
+  (Controller schläft) und neu gedrückt wird; SYNC verbindet immer.
+- Eine Windows-Kopplung („Gerät hinzufügen“) stört und wird automatisch entfernt.
+- Nach dem Verbinden: kurzes „Verbunden“-Vibrieren (abschaltbar), Spieler-LEDs wie an der Konsole.
+- Die Verbindung gilt als verloren, wenn **2,5 s** keine Eingabe kommt.
+
+### 2.2 Switch-2-Controller per USB
+- Pro Controller 2 (PID 0x2069) und GameCube-Controller (0x2073) über USB: WinUSB für Befehle, HID für Eingaben
+  (bis ~500 Berichte/s). Steckt ein per Bluetooth verbundener Controller am Kabel, übernimmt USB und die
+  Bluetooth-Verbindung wird beendet.
+- Getrennt nach **3 s** ohne Eingabe (kurze Pause beim Wechsel Bluetooth → USB wird toleriert).
+- Spiele sehen den USB-Controller zusätzlich direkt → **„Doppelt angezeigt? Verstecken“** (HidHide, Abschnitt 9).
+
+### 2.3 Switch 1, NSO, Wii – selbst koppeln
+- Diese Controller nutzen Bluetooth Classic. SKZ Connect koppelt sie **selbst** mit Windows (`ControllerPairing`):
+  - Switch 1/NSO: Kopplung ohne PIN („Just Works“) über WinRT (`DeviceInformationCustomPairing.PairAsync`,
+    `ConfirmOnly | ConfirmPinMatch`, Anfrage wird sofort bestätigt, höchstens 20 s). Nur wenn WinRT das Gerät gar
+    nicht öffnen kann: Win32 (`BluetoothAuthenticateDeviceEx` + `BluetoothRegisterForAuthenticationEx`) – dort kam
+    die Rückfrage bei Joy-Con oft erst nach dem Abbruch an (Fehler 1244/258, Antwort danach 1167).
+  - Wii: binäre PIN = Adresse des PC-Adapters (dreimal versucht – nur so verbindet sich die Fernbedienung später
+    per Tastendruck), sonst eigene Adresse (Kopplung „1+2“, ohne Wiederverbinden; Hinweis im Protokoll).
+  - Danach HID-Dienst einschalten; der Controller wird beim nächsten HID-Suchlauf gefunden.
+- **Hintergrundsuche** („Neue Controller automatisch koppeln“, Standard an): Suchläufe von 1,3 s – alle 6 s, bzw.
+  alle 15 s, wenn ein Switch-2-Controller verbunden ist; **nie**, während jemand spielt (Eingabe in den letzten 20 s)
+  oder gerade ein Controller verbunden wird. Bereits gekoppelte Controller (z. B. Joy-Con, die zwischendurch an der
+  Switch hingen) werden neu gekoppelt, wenn sie im SYNC-Modus sind. Erkannt wird das daran, dass Windows sie
+  **während dieses Suchlaufs** (`stLastSeen` vorher/nachher) oder **in den letzten 8 s** gesehen hat – **außer**
+  sie waren in den letzten 30 s verbunden (`ControllerPairing.NoteDisconnected`, aufgerufen beim Trennen; sonst
+  würde ein eben ausgeschalteter Controller „gesehen“ und seine Kopplung gelöscht). Ausgeschaltete oder mit der
+  Switch verbundene Controller antworten nicht und bleiben unberührt. Übersprungene bekannte Controller stehen
+  einmal pro Minute im Protokoll („… nicht im Kopplungsmodus erkannt“).
+- Nach einem **Fehlschlag** lässt die Hintergrundsuche den Controller **90 s** in Ruhe (sonst wäre er bei jedem
+  Versuch belegt und tauchte auch in „Gerät hinzufügen“ von Windows nicht auf). Das Fenster „Controller koppeln“
+  versucht es trotzdem.
+- **Neukoppeln abgesichert** (`ScanOnce`, `FindAnswering`):
+  1. Ein bekannter Controller wird nur angefasst, wenn er im Kopplungsmodus ist; **im Hintergrund** muss er dafür in
+     einer zweiten Suche **erneut antworten** (strikt neueres `stLastSeen`) – sonst bleibt seine Kopplung unverändert
+     (Protokoll: „antwortet nicht erneut“). Im Fenster wird die Bestätigung übersprungen: Der Nutzer drückt gerade
+     SYNC, und die zwei Suchläufe würden das kurze Kopplungsfenster (~20 s) vor dem Entfernen aufzehren.
+  2. Alte Kopplung entfernen (sonst verweigert Windows die neue), dann das Gerät **bis zu ~8 s neu suchen** und mit
+     den frischen Gerätedaten koppeln – mit den alten Daten schlägt die Kopplung fehl (Wii: Fehler 259 = keine
+     Einträge). Wird es nicht wiedergefunden (Kopplungsmodus beendet), wird **nicht** mit veralteten Daten gekoppelt;
+     die alte Kopplung ist dann weg und beim nächsten SYNC wird es wie ein neues Gerät gekoppelt.
+  3. Scheitert die Kopplung und antwortet der Controller noch, **zweiter Versuch** mit frisch gesuchten Daten.
+  Erst danach gilt sie als fehlgeschlagen (90 s Pause im Hintergrund). Jede Suche dauert ~1,3 s.
+- **„Controller koppeln …“** (Fenster `PairForm`, Windows-11-Stil): erreichbar über das Infobereich-Menü, die Seite
+  „Allgemein“ und **direkt auf der Controller-Seite** – Knopf „Controller suchen …“ im Leerzustand bzw. in der
+  Leiste am unteren Rand (sichtbar, sobald ein Controller verbunden ist). Sucht 60 s lang, 1 s Pause zwischen den Läufen,
+  koppelt auch bekannte Controller neu, die gerade sichtbar sind. Oben **Status** (aktueller Schritt, Restzeit) und
+  **Verbunden**: jeder Controller, der sich verbindet, solange das Fenster offen ist (auch Switch 2 per SYNC oder per
+  Hintergrund), erscheint sofort mit ✓, Name, Spieler und Verbindungsart (über `ControllerManager.Changed`; schon
+  vorher verbundene zählen nicht). Danach „Fertig“ (Akzent, sobald etwas verbunden ist) oder „Erneut suchen“.
+  Darunter die Anleitung je Controller-Art. Prüfhilfe: `PairForm.Preview` (ohne Bluetooth), Bild `ui_koppeln_*.png`.
+- Erkannte Namen: „Joy-Con (L/R)“, „Pro Controller“, „Lic Pro Controller“, „NES/HVC/SNES/N64 Controller“,
+  „MD/Gen Control Pad“, „Nintendo RVL-CNT-01…“ (Wii), „Nintendo RVL-WBC-01…“.
+- Gekoppelte Classic-Controller werden alle 2 s über die HID-Geräteliste gesucht und verbunden (Switch 1/NSO:
+  Gerätetyp aus der Geräteinfo bestimmt NES/SNES/N64/Mega Drive; Wii: Erweiterung aus dem Register).
+
+- **Joy-Con im Ladegriff per USB** (057E:200E): je Joy-Con eine HID-Schnittstelle; Seite aus dem Gerätetyp der
+  Geräteinfo (0x01 links, 0x02 rechts, 0x03 Pro). USB-Handshake wie beim Pro Controller (0x80 02/03/02/04).
+  Leere Griff-Schnittstellen antworten nicht und werden still alle 5 s erneut versucht.
+
+### 2.4a Originale vor Steam und Spielen verstecken (HidHide)
+- Steam und viele Spiele (SDL) unterstützen Switch-1-, NSO-, Switch-2-USB-Controller und Kabel-Pads **selbst** und
+  sähen sie doppelt (Original + virtueller Controller) – Eingaben kämen doppelt/vermischt an, Steam schickt dem
+  Original außerdem eigene Startbefehle. Wii-Controller sind nicht betroffen.
+- Einstellung **„Original-Controller verstecken“** (`HideFromGames`, Standard an): Jeder solche Controller wird nach
+  dem Verbinden automatisch per HidHide versteckt (`ControllerManager.QueueHide`): 3 s sammeln (Joy-Con-Paar), dann
+  `HidHideCLI --app-reg <SKZ Connect> --dev-hide … --cloak-on` – **ohne Rückfrage** über die geplante Aufgabe
+  „SKZ Connect HidHide“ (vom Installer angelegt, läuft als SYSTEM, Benutzer dürfen sie nur starten; `HidHide.HideViaTaskAsync`
+  startet sie mit den IDs als `$(Arg0)`, der Helfer `SKZ-Connect.exe --hidhide-helper` versteckt nur gerade angeschlossene
+  Nintendo-/Sony-Controller und Kabel-Pads und gibt nur sich selbst frei, schreibt keine Dateien). Fehlt die Aufgabe
+  (portable Variante, Registrierung im Setup gescheitert – die Aufgabenplanung meldet das als `FileNotFoundException`
+  0x80070002), ist sie nicht lesbar oder gehört sie zu einer anderen EXE (Entwicklerversion): **eine** UAC-Abfrage.
+  Jeder andere Fehler der Aufgabenplanung führt ebenfalls zur UAC-Abfrage statt still abzubrechen (bis 1.0.21 blieb das
+  Verstecken dann ohne Meldung aus, Issue #1). Erfolg → `HiddenDevices`, Meldung
+  (läuft Steam: „Steam einmal neu starten“ – Steam hält sein schon geöffnetes Handle). Abgebrochen oder fehlgeschlagen →
+  protokolliert, Meldung, in dieser Sitzung nicht erneut fragen; die Meldung sagt „Abfrage abgebrochen“ nur, wenn die
+  UAC-Abfrage abgelehnt wurde (Win32-Fehler 1223, `HidHide.HideResult.Declined`), sonst „Fehler, Details im Protokoll“
+  (Fehlercode der Aufgabe oder von HidHideCLI, keine Rückmeldung, Ausnahme). Nachholen per Karte → Extras → „Doppelt
+  angezeigt?“ (Fehler dort: Meldung „HidHide konnte nicht eingerichtet werden …“) oder Einstellung aus/ein.
+- **Nie versteckt werden virtuelle Geräte** (eigene ViGEm-Pads und die anderer Programme): `QueueHide`,
+  `HidHide.HideAsync` und der Aufgaben-Helfer prüfen jede ID mit `DeviceTree.IsPhysicalInstance` (siehe 2.5) –
+  sonst sähen Spiele die Ausgabe von SKZ Connect nicht mehr.
+- Bluetooth-Instanz-IDs ändern sich nach jedem Neukoppeln → dann wird erneut versteckt (mit Aufgabe ohne Abfrage).
+- HidHide fehlt → einmalige Meldung, auf „Allgemein“ Knopf „HidHide installieren …“. Der Installer installiert
+  HidHide **immer** still mit, wenn es fehlt (keine Auswahl; danach fragt das Setup nach einem Neustart), trägt
+  SKZ Connect als erlaubtes Programm ein und schaltet das Verstecken ein (`--app-reg … --cloak-on`; schlägt das vor dem
+  Neustart fehl, holt die App es beim ersten Verstecken nach). Deinstallieren trägt die Freigabe wieder aus
+  (`--app-unreg`), HidHide selbst bleibt.
+- **HidHide-Update** (`HidHideUpdate`, Einstellung „HidHide aktuell halten“ = `CheckHidHideUpdates`, Standard an): beim
+  Start (nach der SKZ-Connect-Prüfung, nur wenn es kein SKZ-Connect-Update gibt) neueste Version von
+  `nefarius/HidHide/releases/latest` gegen die Dateiversion von `HidHideCLI.exe`. Neuer → Einblendung, Klick → Rückfrage →
+  Download nur von `github.com/nefarius/HidHide/` (Größe geprüft) → **Authenticode-Prüfung** (`WinVerifyTrust`,
+  Unterzeichner „Nefarius Software Solutions e.U.“) → offizielles Setup **mit Oberfläche** starten (es deinstalliert die
+  alte Version und verlangt Neustarts; daher bewusst nicht still). Nur x64.
+- **Nach jedem HidHide-Wechsel** (Version ≠ `Settings.HidHideVersion`, beim Start geprüft) wird `HiddenDevices`
+  geleert – die Neuinstallation verliert HidHides Geräteliste; die Controller werden beim Verbinden neu versteckt
+  (mit der Aufgabe ohne Abfrage).
+
+### 2.4 Kabel-Pads und Nachbauten
+- HORI/PowerA/PDP-Kabel-Pads werden an Hersteller-/Produktkennung erkannt (`WiredSwitchPad.Known`) und laufen als
+  „Switch Pro Controller“ (gleiche Tasten, Grafik, Belegung) unter eigenem Namen – ohne Gyro/Vibration/LEDs.
+- Nachbauten im Switch-Modus: Beantworten sie Speicher-Lesebefehle nicht, nutzt SKZ Connect nach der ersten
+  ausbleibenden Antwort Standardwerte (keine weiteren Wartezeiten). Melden sie keine Bluetooth-Adresse
+  (00:… bzw. FF:…), dient die Geräte-Instanz als Kennung.
+
+### 2.5 Xbox- und PlayStation-Controller
+- **Xbox über XInput** (`XInputLink`, Protokoll `XboxPad`): alle vier XInput-Plätze werden alle 2 s geprüft.
+  Windows meldet einen Xbox-Controller über XInput unabhängig vom Transport (USB, Bluetooth, Xbox-Wireless-Adapter)
+  gleich – die Karte zeigt daher „XInput (USB, Bluetooth oder Xbox-Adapter)“ und nie eine falsche Art.
+  Abgedeckt: Xbox 360, Xbox One, Series, Elite und XInput-kompatible Drittanbieter. Modellname aus VID/PID
+  (Capabilities über Ordinal 108, wenn vorhanden). Akku über `XInputGetBatteryInformation`, Guide-Taste über
+  den erweiterten Zustand (Ordinal 100). Abfrage ~125 Hz; nach drei ausbleibenden Antworten gilt er als getrennt.
+- **Kein virtueller Controller:** Ein nativer Xbox-Controller ist für Spiele schon ein Controller – ein zusätzlicher
+  virtueller würde doppelt zählen. `Player` erzeugt für `Native`-Links kein ViGEm-Pad; die Karte zeigt
+  „Im Spiel: Xbox · Platz n · nativ“ und statt „Erscheint als“ einen Hinweis. Belegung wirkt nur auf
+  Sonderaktionen (Tastatur, Makros, Gyro), nicht auf den Controller selbst.
+- **Eigene virtuelle Pads nie als echt melden:** ViGEm-Xbox-360-Controller melden sich ebenfalls über XInput.
+  `XInput.SetVirtualSlot` markiert die von SKZ Connect angelegten Plätze (`Xbox360Pad` registriert seinen
+  `UserIndex`, `IsVirtual` filtert sie) – ein virtueller Controller wird nie als physischer Xbox-Controller
+  angezeigt.
+- **Sony über HID** (`PlayStationHidLink`, Protokoll `PlayStationPad`): Sony-HID-Pfade (054C:05C4/09CC/0BA0/0CE6/
+  0DF2) werden im selben 2-s-Suchlauf gefunden; USB- und Bluetooth-Pfade sind unterscheidbar (`vid_054c` vs.
+  `vid&0002054c`).
+- **Eigener virtueller DualShock 4 (ViGEm) nie als Eingabe** (`DeviceTree.IsPhysical`, Unit-Tests in
+  `tests/Switch2Pro.Bridge.Tests`): ViGEm-Pads melden sich als USB-Geräte (`USB\VID_054C&PID_05C4\…`) unter dem
+  Root-Knoten des ViGEm-Busses (`ROOT\SYSTEM\000n`, Dienst `ViGEmBus`, Hardware-ID `Nefarius\ViGEmBus\Gen1`). Geprüft wird
+  die ganze Vorfahrenkette bis zur Wurzel: virtuell, wenn ein Knoten zum ViGEmBus gehört (Dienst oder Hardware-ID) oder
+  über der USB-Kette zuerst ein Software-Knoten (`ROOT\`, `SWD\`) bzw. die Wurzel kommt; echt nur, wenn vorher ein
+  USB-Host/Hub (`USB\ROOT_HUB…`, `PCI\…`) oder der Bluetooth-Stack (`BTH…`) erreicht wird. Ein `ROOT\`-Vorfahre allein
+  sagt nichts (echte Geräte haben oben `ROOT\ACPI_HAL\0000`). Bis 1.0.21 genügte ein `USB\`-Vorfahre – mit Ausgabeart
+  DualShock 4 entstanden so bis zu 8 Geister-Spieler (Issue #1). Zusätzlich schreibt `PlayStationHidLink` in ein als
+  virtuell erkanntes Gerät keine Vibration und Lichtleiste.
+- **Berichte:** DualShock 4 USB (0x01) und Bluetooth (0x11, CRC32), DualSense USB voll (0x01), einfach (0x01 BT)
+  und Bluetooth erweitert (0x31, CRC32) – jeweils Tasten, D-Pad, analoge Trigger, Sticks, Touchpad-Klick, PS-Taste,
+  DS5-Mikro und Edge-Tasten (Byte 10), Gyro/Beschl. (auf die internen Switch-2-Achsen gedreht), Akku.
+  Ungültige Bluetooth-CRCs werden verworfen.
+- **DualSense Bluetooth:** startet im einfachen Modus – SKZ Connect schickt einmalig einen Effekt-Bericht (0xA2 mit
+  CRC), womit der Controller in den erweiterten Modus wechselt (Gyro, Akku, Touchpad).
+- **Ausgaben an den Sony-Controller:** Vibration (DS4 0x05/0x11, DS5 0x02/0x31 inkl. Trigger-Effekte-Felder),
+  Lichtleiste (vom virtuellen DS4-Ausgang des Spiels durchgereicht, `IControllerLink.SetLightbarAsync`),
+  DS5-Spieler-LEDs und Mikro-LED; Bluetooth-Berichte mit Seed 0xA2 + CRC32. Gesendet wird über eine eigene
+  Sende-Schleife, die jeweils den neuesten Wunsch nimmt (der ViGEm-Rückkanal wartet nie auf Bluetooth); hängt WriteFile
+  länger als 500 ms, geht der Bericht über den Steuerkanal (`HidD_SetOutputReport`). Lief beim Trennen noch Vibration,
+  wird einmal „aus“ gesendet.
+- **Metadaten:** Seriennummer/Adresse und Firmware über Feature-Berichte (DS4 0x12, DS5 0x09/0x20); die USB-Instanz-
+  ID wird **nicht** als Seriennummer ausgegeben. Adressschlüssel: Bluetooth = MAC, USB = `USB:<Instanz>`.
+- **Verstecken:** Sony-HID-Controller stehen wie Nintendo-Geräte auf der HidHide-Whitelist (`HidHide.IsKnownController`
+  und die Aufgaben-Helfer-Prüfung) und werden mit aktivem virtuellen Ausgang versteckt. **Native Xbox-Controller
+  werden nie versteckt** – das native Gerät ist dort der Spiele-Eingang.
+
+### 2.6 Trennen und Schlafen
+- **Trennen** (Karte, Infobereich, „Alle Controller trennen“): Switch 1 wird schlafen gelegt (HCI-Befehl, sonst hielte
+  Windows die Verbindung; höchstens 1 s gewartet), die anderen werden getrennt. Bluetooth-Controller verbinden sich
+  danach erst nach Pause und neuem Tastendruck (siehe 2.1), USB-Controller erst nach Ab- und Anstecken des Kabels.
+- **Bei Inaktivität trennen** (0 = nie, sonst Minuten): Prüfung alle 10 s; USB-Controller werden nie getrennt.
+  „Aktivität“ = Taste, Stick > 0,3, Trigger > 0,3, Drehung > ~20 °/s oder Mausbewegung.
+
+---
+
+## 3. Übersicht (Controller-Seite)
+
+- **Statusleiste** (`StatusBand`, ganz oben): Kacheln „Verbunden n / 8“, „Bluetooth bereit/nicht verfügbar“,
+  „Niedrigster Akku“ (Prozent, Spieler, ggf. lädt), „Ausgabe“ (Xbox 360 / DualShock 4 / gemischt) und
+  „Original-Controller“ (versteckt / sichtbar / HidHide fehlt; HidHide-Prüfung nur alle 5 s). Bei schmalem Fenster
+  fallen hintere Kacheln weg. Rechts der Umschalter **Groß | Kompakt** (`Settings.CompactCards`).
+- Je Spieler eine **Karte**: Live-Grafik (Form/Tasten nach Produktfotos, Originalfarben aus dem Controller,
+  gedrückte Tasten leuchten, Sticks bewegen sich, analoge Trigger füllen sich), Akku, Verbindung (Art +
+  Berichte/s), Griff/Maus (Joy-Con 2), gedrückte Tasten (mit den Namen des jeweiligen Controllers: Kreuz/Kreis,
+  A/B/LB, SL/SR …). Zwei Spalten bei breitem Fenster, zugeklappte Karten gleich hoch. **Kompakt**: kleine Grafik,
+  nur Akku/Verbindung/Im Spiel, Spielernummer als Abzeichen, bis zu 4 Spalten (ab 400 px je Karte); aufgeklappt
+  wieder groß. Neu verbundene Karten leuchten kurz im Neon-Verlauf auf, gedrückte Tasten lassen den Rand glühen,
+  Akkubalken füllen sich animiert.
+- **Spieler-Reihenfolge** (`PlayerOrderBar`, ab zwei Spielern über den Karten): je Spieler ein Chip (Nummer, Name,
+  ‹ ›), verteilt auf möglichst wenige gleich volle Zeilen (8 Spieler: 2 × 4). Spieler 1 ist mit Neon-Rand
+  hervorgehoben – das ist für Windows, Steam und Spiele der erste Controller. ‹ › tauscht mit dem Nachbarn
+  (`ControllerManager.MovePlayer`).
+- **Titel anklicken** → Menü: einen belegten Spielerplatz wählen (= tauschen) und Controller umbenennen
+  (bei einem Paar je Joy-Con).
+- Knöpfe: **Vibrieren** (welcher ist welcher?), **Trennen**, **Einstellungen** (klappt Reiter für genau diesen
+  Controller auf): Tasten, Feineinstellung, Gyro, Joy-Con, Extras, Details.
+- Schwache Verbindung (< 20 Berichte/s dauerhaft nach 20 s) → einmalige Einblendung mit Tipp (nicht bei Wii, da sie
+  absichtlich nur bei Änderung sendet).
+
+## 3a. Ausgabeart (Xbox 360 / DualShock 4)
+- Allgemein (`Settings.OutputMode`, Standard **Xbox 360** – läuft mit fast allen Spielen und Steam) und **je
+  Controller** (`Settings.ControllerOutputs`, Adresse → Art; Karte → Einstellungen → Tasten → „Erscheint als“: Wie
+  allgemein / Xbox 360 / DualShock 4; ebenso im Infobereich). DualShock 4 bringt Gyro nach Steam/Emulatoren.
+- Paar: gilt die erste eigene Einstellung eines der beiden Joy-Con (`Player.DesiredOutput`).
+- Änderung → `ControllerManager.ApplyOutputMode`: passt ein virtueller Controller nicht mehr, werden **alle** in
+  Spielerreihenfolge neu angelegt (Xbox-Plätze bleiben in Reihenfolge). Auch nach Verbinden/Zusammenfassen geprüft.
+- **Native Xbox-Controller** (`Link.Native`) bekommen keinen virtuellen Controller und keine Ausgabewahl – die Karte
+  zeigt statt „Erscheint als“ einen Hinweis (siehe 2.5). `DesiredOutput`/`ApplyOutputMode` überspringen sie.
+
+## 4. Spielerplätze und Namen
+- **Platz**: Leiste „Spieler-Reihenfolge“, Klick auf den Kartentitel oder Infobereich → Spieler → Spielerplatz.
+  Angeboten werden nur belegte Plätze (= tauschen). LEDs und DSU-Slot folgen; die virtuellen Controller werden in der
+  neuen Reihenfolge **neu angelegt** (Windows vergibt Xbox-Plätze nach Anlegereihenfolge; Spiele sehen kurz ein
+  Trennen/Verbinden). Der Platz wird je Controller gemerkt (`Settings.PlayerSlots`).
+- **Immer lückenlos** (`ControllerManager.CompactPlayers`): Fällt ein Spieler weg (getrennt, Joy-Con zum Paar
+  zusammengefasst), rücken die übrigen auf – Spieler 2 wird Spieler 1 usw. (Meldung „… ist jetzt Spieler 1“). Die
+  gemerkten Plätze bleiben dabei unverändert. Beim Verbinden bekommt ein Controller seinen gemerkten Platz nur, wenn
+  er frei ist **und** keine Lücke entsteht (`FreeIndex`: Platz ≤ Anzahl Spieler), sonst den ersten freien.
+- **Name** (max. 40 Zeichen, leer = Standardname): erscheint in Karte, Infobereich-Menü und Tooltip. Paar: Namen
+  beider Joy-Con, bei nur einem Namen „Name (Joy-Con-Paar)“.
+
+---
+
+## 5. Belegung (Tasten)
+
+### 5.1 Standard
+- **Xbox-Belegung** (nach Position): untere Taste = A usw. **Switch-Belegung** (nach Beschriftung): A bleibt A.
+- Standardziele: L/R → LB/RB, ZL/ZR → LT/RT, − → Back, + → Start, HOME → Guide, Aufnahme → Touchpad-Klick
+  (nur DualShock 4), C/GL/GR/SL/SR/Headset → nichts.
+- GameCube: immer nach Position; Z (ZR) = RB, ZL = LB, L/R digital = nichts (analog über Trigger), C = Back.
+- N64/Mega Drive: Tasten sind schon nach Position angeordnet (siehe Protokolle).
+- **Xbox und PlayStation** (`XboxController`, `DualShock4`, `DualSense`): `DefaultTarget` zwingt die
+  **Xbox-Belegung nach Position** – die Tasten kommen schon positionsgleich an (unten→B, rechts→A, links→Y, oben→X;
+  Back/Share→−, Start/Options→+, Guide/PS→HOME, Touchpad-Klick→Aufnahme). Analoge Trigger werden bei allen Arten
+  übernommen (`Mapping.Normalize` schleift `LeftTrigger`/`RightTrigger` immer durch, nicht nur bei GameCube).
+
+### 5.2 Aktionen je Taste (`ButtonAction`, als Text gespeichert)
+| Text | Wirkung |
+|---|---|
+| `A`, `LB`, `LT`, `Back`, `Up`, … `Touchpad` | Taste des virtuellen Gamepads |
+| `None` | Taste aus |
+| `Key:F5`, `Key:Ctrl+Shift+S` | Tastatur-Hotkey (gehalten, solange die Taste gehalten wird) |
+| `MouseLeft` / `MouseRight` / `MouseMiddle` | Maustaste |
+| `GyroMouse` / `GyroMouseToggle` | Gyro bewegt die Maus (halten / ein-aus) |
+| `GyroStick` / `GyroStickToggle` | Gyro steuert den rechten Stick (halten / ein-aus) |
+| `Shift` | Shift-Ebene, solange gehalten: andere Tasten bekommen ihre zweite Belegung |
+| `Turbo:A`, `Turbo:Key:Space` | Dauerfeuer im Takt `TurboRate` (Standard 12 Wechsel/s, beginnt mit „an“) |
+| `Macro:A 80, Pause 40, A 80` | Makro: bei jedem neuen Drücken einmal abgespielt |
+
+- **Makro-Format**: Schritte durch Komma; je Schritt Tasten (mit `+` gleichzeitig) oder `Key:…` oder `Pause`/`Warten`,
+  dann Dauer in ms (Standard 60, max. 5000), max. 64 Schritte.
+- **Taste per Tastendruck belegen**: ⌨ neben der Taste klicken, Taste auf der Tastatur drücken.
+- **Vorrang**: Shift-Ebene (wenn aktiv) → Profil (benannt oder Standard) je Controller-Art → alte freie Umbelegung
+  (`Remap`, nicht beim GameCube) → Standard.
+- Belegungen gelten **je Controller-Art**. Ein hochkant gehaltener einzelner Joy-Con nutzt die Belegung
+  „Joy-Con-Paar“ (Tasten unter echten Namen), ein quer gehaltener seine eigene (gedrehte Namen).
+
+### 5.3 Profile
+- Benannte Profile mit Programmliste (EXE-Namen): automatisch aktiv, solange eines dieser Programme im Vordergrund ist
+  (Prüfung jede Sekunde). Fest wählbar im Infobereich („Automatisch“, „Standard“, Profilname).
+- Export/Import als `*.ncprofile.json` (ungültige Einträge werden beim Import verworfen).
+
+---
+
+## 6. Sticks, Trigger, Vibration (Feineinstellung)
+
+- **Totzone** radial 0–0,5 (Standard 0,06), weicher Übergang, auf den Kreis begrenzt; je Controller-Art einstellbar.
+- **Kennlinie** (Exponent 0,3–3; 1 = linear, > 1 feiner in der Mitte).
+- **Analoge Trigger** (GameCube): Totzone 0–0,5 (Standard 0,05), „voll ab“ 0,5–1.
+- **Vibration**: an/aus, Stärke 0–1 (Standard 0,8), je Controller-Art. Switch 2: großer Motor → tiefes Band
+  (0x112), kleiner → hohes Band (0x187), Amplitude max. 453/1023 (wie SDL, schont die Motoren).
+- **Switch 1/NSO** (`Switch1HidLink.RumbleLoopAsync`, Bericht 0x10 alle 30 ms, wie SDL): Für die Fehlersuche steht je
+  Verbindung einmal im Protokoll, wann der erste Vibrationswunsch ankommt (Werte, Stärke) und wann der erste Bericht
+  0x10 gesendet wurde; wünscht ein Spiel Vibration, obwohl sie in den Einstellungen aus ist, ebenfalls einmal je
+  Spieler. Einzelne Schreibfehler (kurzer Funkaussetzer) beenden die Vibration nicht mehr – erst 50 in Folge (~1,5 s).
+- **Stick-Kalibrierung** (geführt, je Controller und Stick): 1. Stick loslassen, bis 1,5 s ruhig (Streuung ≤ 60
+  Rohschritte); 2. am Rand kreisen, bis 24 Richtungen (≥ 700 Rohschritte von der Mitte) erfasst sind. Ergebnis:
+  Mitte und Ausschlag je Richtung × 0,95 (Rand sicher erreichbar), mindestens 400 je Richtung. Anzeige der
+  Abweichung vom Kreis vorher/nachher. **Nur in SKZ Connect gespeichert**, der Controller bleibt unverändert;
+  „Werkswerte“ entfernt sie. (Nicht für Wii-Sticks.)
+
+## 7. Bewegungssteuerung (Gyro)
+
+- **Gyro kalibrieren**: Controller 2 s ruhig liegen lassen → Nullpunkt je Controller gespeichert.
+- **Gyro als rechter Stick** (`GyroStick`): Aus (nur per Taste) / Immer / Beim Zielen (LT > 40/255). Gieren = X,
+  Nicken = Y; unter 1,5 °/s nichts (Rauschen); ab da Mindestausschlag `AntiDeadzone` (Standard 12 %), voller
+  Ausschlag bei `FullSpeed` °/s (Standard 150); Y umkehrbar; wird zum echten Stick addiert.
+- **Gyro-Assistent**: Nullpunkt, Modus, Empfindlichkeit mit Live-Vorschau (Fadenkreuz).
+- **Gyro-Maus**: Bildpunkte je Grad (Standard 20), per Taste gehalten oder umgeschaltet.
+- **Joy-Con-Paar**: Gyro vom rechten (Standard) oder linken Joy-Con.
+- **DualShock 4**: Bewegungsdaten gehen an Spiele/Steam.
+- **Cemuhook/DSU** (Standard an): UDP 127.0.0.1:26760 für Emulatoren (Cemu, Dolphin, Yuzu-Nachfolger …), Spieler 1–4.
+  Derselbe Server wie unter Android und Linux (`Switch2Pro.Protocol.DsuServer`); ist der Port belegt (etwa durch
+  DS4Windows), läuft SKZ Connect ohne DSU weiter und vermerkt das im Protokoll.
+
+### 7.1 Extras nach JoyShockMapper (Referenz: JSM-Dokumentation, gleiche Begriffe)
+- **Gyro-Beschleunigung** (`GyroAcceleration` 1–4, 1 = aus; `GyroAccelSlow` 20 °/s, `GyroAccelFast` 120 °/s – wie
+  MIN/MAX_GYRO_SENS mit MIN/MAX_GYRO_THRESHOLD): Faktor 1 bis zur langsamen Schwelle, voll ab der schnellen,
+  dazwischen linear (`Mapping.GyroAccelFactor`). Gilt für Gyro-Stick und Gyro-Maus.
+- **Gyro anhalten / „Ratchet“** (`SpecialAction.GyroPause`, wie GYRO_OFF): einer Taste zuweisbar; solange gehalten
+  bewegt der Gyro weder Stick noch Maus (Gyro-Maus setzt ohne Sprung fort).
+- **Flick-Stick** (`FlickStick`, Klasse `FlickStick` im Protokoll, wie FLICK_STICK): rechter Stick ≥ 90 % →
+  Kamera dreht um den Stick-Winkel (oben 0°, rechts +90°) über `FlickTime` (Standard 0,1 s, linear); am Rand
+  gedreht → dreht um die Winkeländerung mit (über die Rückseite ohne Sprung); unter 75 % = losgelassen. Ausgabe als
+  waagerechte **Mausbewegung** (`FlickCountsPer360`, Standard 3600, je Spiel per „Testdrehung“ einstellen: nach 3 s
+  eine volle Drehung in 0,5 s). Der rechte Stick geht dann nicht ans Spiel; ein Gyro-Stick-Anteil bleibt.
+
+### 7.2 Rückkanal vom Spiel (`GameLeds`, Standard an)
+- **Xbox 360**: Den Platz (0–3), den Windows dem virtuellen Controller gibt (ViGEm `LedNumber`), zeigen die
+  Spieler-LEDs des Controllers und die Grafik; die Karte zeigt „Im Spiel: Xbox 360 · Platz n“. Der virtuelle
+  Controller merkt sich den gemeldeten Platz und liefert ihn bei späterer Anmeldung nach (kommt beim Verbinden).
+- **DualShock 4**: Lichtleiste aus dem Ausgabebericht 0x05 (Byte 1 Bit 1, Byte 6–8 RGB, wie DS4Windows) → Farbe in
+  der Karte; Helligkeit (max(R,G,B)/17, 0–15) als HOME-LED (Unterbefehl 0x38 wie SDL; nur Switch 1 Pro und
+  Joy-Con R), nur bei geänderter Stufe gesendet.
+
+## 8. Joy-Con-Besonderheiten
+
+- **Paar automatisch**: Linker + rechter Joy-Con werden ein Spieler (abschaltbar), außer einer wurde zuletzt einzeln
+  verwendet (gemerkt je Joy-Con).
+- **Trennen**: quer gehalten (Schwerkraft überwiegend entlang der Schienenachse, |X| > 2500/4096 g und deutlich
+  größer als Y/Z) **und SL oder SR drücken** → sofort eigener Spieler; oder Knopf. „SL + SR 1 s halten“ trennt bewusst **nicht**
+  mehr (löste beim Anstecken/Halten im Paar versehentlich aus).
+- **Zusammenfügen**: L am linken und R am rechten einzelnen Joy-Con innerhalb von 1 s; oder Knopf.
+- **Einzeln quer** (Standard): Stick und Bewegungsdaten gedreht, Tasten nach Lage benannt:
+
+  | Joy-Con L quer | → | Joy-Con R quer | → |
+  |---|---|---|---|
+  | ◀ / ▼ / ▲ / ▶ | B / A / Y / X (Pro-Namen nach Lage) | A / X / B / Y | B / A / Y / X |
+  | SL / SR | L / R | SL / SR | L / R |
+  | L / ZL | ZL / ZR | R / ZR | ZL / ZR |
+  | − / Aufnahme | + / HOME | + / HOME | + / HOME |
+  | Stick-Klick | linker Stick-Klick | Stick-Klick | linker Stick-Klick |
+
+- **Einzeln hochkant** (umschaltbar je Joy-Con): ungedreht, Belegung des Joy-Con-Paars.
+- **Joy-Con 2 als Maus** (Standard an): steht er auf der Schienenkante (Sensor unten, Schwerkraft entlang X), ist er
+  eine Maus: R/L = Linksklick, ZR/ZL = Rechtsklick, Stick-Klick = Mittelklick, Stick hoch/runter = Scrollen; Bewegung
+  geglättet über die Berichtsabstände verteilt; deutlich gekippt (> ~50°) → sofort wieder Controller.
+- **Charging Grip (Joy-Con 2)**: erkannt per Befehl (alle ~5 s geprüft), dann GL/GR des Griffs eingeschaltet.
+
+## 9. Wii-Besonderheiten
+
+- **Haltung**: Ohne Nunchuk/Classic quer (Steuerkreuz links): ▲ → links, ▼ → rechts, ◀ → unten, ▶ → oben;
+  1 = Y-Position, 2 = B-Position, B (Abzug) = ZR. Mit Nunchuk senkrecht: C = L, Z = ZL, Stick = linker Stick.
+- **Classic Controller** (auch Pro): volle Belegung wie Pro Controller.
+- **MotionPlus** (Aufsatz oder „Inside“): automatisch eingeschaltet, auch mit Nunchuk/Classic dahinter (Daten
+  wechseln sich ab); Nullpunkt wird laufend nachgeführt, wenn die Fernbedienung ~0,5 s ruhig liegt (≤ 3 °/s).
+- **Zeiger steuert die Maus** (IR-Kamera, Sensorleiste nötig): Mitte der zwei äußersten Lichtpunkte, gespiegelt.
+- **Senden nur bei Änderung** (spart Funkzeit); verbunden bleibt sie über Statusabfragen (nach 3 s Stille Abfrage,
+  ohne Antwort binnen 2,5 s = getrennt). Akku alle 30 s abgefragt.
+- **Erweiterung erkennen**: Lesen mit 1,5 s Wartezeit, 3 Versuche, Antworten über die Adresse zugeordnet; keine
+  Antwort ≠ keine Erweiterung (neuer Versuch nach 2 s, höchstens 5-mal).
+
+## 10. Extras (Switch 1)
+
+- **amiibo lesen** (Pro Controller, rechter Joy-Con): NTAG215, 540 Byte → Datei `.bin`.
+- **Ring-Con** (rechter Joy-Con): Zusammendrücken = rechter Trigger, Auseinanderziehen = linker Trigger (analog);
+  Ruhelage beim Einschalten gemessen (nicht berühren).
+- **IR-Kamera** (rechter Joy-Con): Live-Bild 40 × 30 … 320 × 240 Graustufen.
+
+---
+
+## 11. Akku
+
+- **Anzeige** auf der Karte (mit Spannung bei Switch 2, „⚡ lädt“), im Infobereich-Symbol (niedrigster Stand aller
+  Controller, 5-%-Stufen) und im Tooltip/Menü.
+- **Warnung** einmal bei 15 % und einmal bei 5 %; wieder scharf ab 25 % oder beim Laden (nur `Player.CheckBattery`;
+  die doppelte zweite Warnung aus `ControllerManager` ist entfernt).
+- **Switch 2** meldet nur die Spannung (`BatteryEstimator`):
+  - Kennlinie Pro/GameCube 3,30 V = 0 % … 4,15 V = 100 % (Stützpunkte 3600/10, 3700/25, 3800/45, 3900/65, 4000/82);
+    Joy-Con 2 3,05 V … 3,36 V (geschätzt). Kaufmännisch gerundet.
+  - Glättung (Zeitkonstante 4 s), Toleranz ±3 mV gegen Flackern an Prozentgrenzen.
+  - **Laden**: Spannung liegt höher als die Ruhespannung. Der Sprung wird beim Anstecken nach 10 s gemessen und
+    je Controller gespeichert (`battery.json`), es gilt der größte gemessene Wert, mindestens 20 mV (Joy-Con 2: 10).
+    Beim Laden steigt die Anzeige nur, ohne Kabel sinkt sie nur (deutlich höher nur nach Laden/Akkuwechsel).
+  - **Abziehen/Ladepause**: 10 s abwarten (Spannung klingt ab), dann den echten Stand übernehmen.
+  - Gemessen am Pro Controller 2: Ruhe 3704 mV ≈ 26 %, beim Laden +20 mV; Lade-Byte `2C/3C/34` = lädt, `20` =
+    Kabel steckt/Pause, `00` = kein Kabel. Alle 30 s Spannung und Rohbytes im Protokoll.
+- **Switch 1/NSO**: Stufe 0–8 → 0–100 %; **Wii**: 0–200 → 0–100 %; **Wii U Pro**: Stufe 0–4.
+
+## 11a. Desktop-Modus, Testseite, Einblendung, Diagnose
+
+- **Desktop-Modus** (`DesktopControl`, `Settings.DesktopMode`, Standard **aus**; Zeigergeschwindigkeit
+  `DesktopPointerSpeed` 25–300 %): verfügbar, wenn eingeschaltet, kein Programm mit eigenem Profil im Vordergrund
+  (`DetectedProfile`) und das Vordergrundfenster nicht den ganzen Monitor bedeckt (Vollbild/randlos; Desktop und
+  Taskleiste zählen nicht; Prüfung höchstens alle 300 ms). Arbeitet in `Player.OnState` hinter der Tastenbelegung
+  (Xbox-Abbild, also nach Lage): linker Stick = Zeiger (Totzone 15 %, Kennlinie 2,2, RT = ×0,3), rechter Stick =
+  Scrollen (auch waagerecht), A/B/RS = Links-/Rechts-/Mittelklick, X = Win+Tab, Y = Bildschirmtastatur (osk.exe
+  an/aus), Steuerkreuz = Pfeiltasten mit eigener Wiederholung (0,4 s, dann 60 ms), LB/RB = Alt+Links/Rechts,
+  Start/Back = Enter/Esc beim Loslassen, HOME = Win. Back + Start 1 s halten pausiert/setzt fort (Meldung). Solange
+  aktiv: Spiel bekommt Neutralstellung, Tastatur-Belegungen, Sonderaktionen und Flick-Stick ruhen; beim Verlassen
+  wird alles losgelassen.
+- **Testseite** (`ControllerTestView`, Reiter „Test“ der Karte): Sticks mit Live-Punkt und Rundheitslinie (48
+  Richtungen, Abweichung ab ¾ abgedeckt), Trigger, Gyro/Beschleunigung, gedrückte Tasten, Berichtsrate; Knöpfe
+  „Vibration testen“ und „Kreis zurücksetzen“.
+- **Einblendung beim Verbinden** (`ConnectOverlay`, `Settings.ConnectOverlay`, Standard an; Ereignis
+  `ControllerManager.LinkConnected`): Kärtchen oben rechts, ohne Fokus, klickdurchlässig, 3 s, stapelt sich.
+- **Diagnose exportieren** (`Diagnostics`, *Allgemein → Erweitert*): ZIP mit bridge.log(+.1), settings.json und
+  system.txt (Version, Windows, Sprache, Skalierung, Treiber mit ViGEmBus- und HidHide-Version, Controller).
+  Einstellungen enthalten keine Schlüssel. Beide Treiberversionen stehen außerdem beim Start im Protokoll
+  (ViGEmBus ist seit 2023 archiviert – so lassen sich Probleme nach Windows-Updates schnell zuordnen).
+- **Tastenvorlagen** für Zusatztasten: Mikrofon stumm (Win+Alt+K), Discord Strg+Umschalt+M/D, Win+D, Win+Tab,
+  Alt+Tab, Ton aus, Titel vor/zurück (`NextTrack`/`PrevTrack`).
+- **Desktop-Widget** (`ControllerWidget`, `Settings.DesktopWidget`, Standard **aus**; *Allgemein → Desktop-Widget*):
+  rahmenloses Kärtchen im aktiven Farbschema (Neon: Akzentlinie oben) mit Spieler, Name, Verbindung · Ausgabe und
+  Akku (leerster Akku des Spielers, Blitz beim Laden); Kopf zeigt Anzahl bzw. aktives Profil (im Infobereich fest
+  „Standard“ gewählt: „Profil: Standard“, `ControllerWidget.ProfileStatus`). Ohne Fokus, nicht in
+  der Taskleiste; mit der Maus verschiebbar (`WidgetX`/`WidgetY`, ungültige Position → oben rechts), Rechtsklick:
+  SKZ Connect öffnen, Immer im Vordergrund (`WidgetOnTop`), Kompakte Ansicht (`WidgetCompact`), Deckkraft
+  (`WidgetOpacity` 40–100 %), Position zurücksetzen, ausblenden. Doppelklick öffnet SKZ-Connect. Aktualisiert sich
+  jede Sekunde, zeichnet nur bei Änderungen neu (`TrayApp.SyncWidget`).
+
+## 12. Infobereich (Taskleiste)
+
+- Linksklick: Fenster. Rechtsklick: Menü mit je Spieler einem Untermenü (Vibrieren, Spielerplatz, Trennen),
+  „Alle Controller trennen“, Ausgabe (Xbox 360 / DualShock 4), Tastenanordnung, Profil, Vibration, Mit Windows
+  starten, Einstellungen, Controller koppeln, Kurzanleitung, Protokoll öffnen, Update, Beenden. Bei einem
+  Bluetooth-Problem steht es als erste Zeile darüber; die Spieler bleiben trotzdem aufgeführt (USB, XInput und ohne
+  Bluetooth LE auch die klassischen Controller laufen weiter).
+- Symbol zeigt den niedrigsten Akkustand; Tooltip je Spieler „P1 Name 57 %“ (max. 127 Zeichen), ohne Controller
+  „SKZ Connect: warte auf Controller (SYNC drücken)“, bei einem Bluetooth-Problem bzw. fehlendem ViGEmBus
+  „SKZ Connect: <Problem>“ – alles in der Sprache der Oberfläche.
+- Einblendungen: Verbunden/Getrennt, Kopplung, Akku, schwache Verbindung, Bluetooth-Probleme, Update.
+
+## 13. Kopplungsdaten (Switch 1)
+
+- **Von der Switch-SD-Karte** (Bluepick_RCM/hekate: `switchroot/joycon_mac.ini` bzw. `.bin`, `switch.cal`): wird
+  beim Einstecken erkannt (Kartenleser oder hekate „USB Tools“), nur gelesen; Übernahme fragt nach und legt vorher
+  eine Sicherung der Einstellungen an.
+- **PC → PC**: Datei `*.skzpair` (JSON; optional mit Passwort: AES-256-GCM, Schlüssel per PBKDF2-SHA256). Schlüssel
+  nur auf ausdrücklichen Wunsch. Übernahme ergänzt, löscht nichts.
+- SKZ Connect ändert dabei **weder** die Bluetooth-Adresse des Adapters **noch** Windows-Kopplungen.
+- Fenster `PairingDataForm` im Windows-11-Stil (Gruppen „Übernehmen“, „Inhalt“, „Weitergeben und sichern“, Fußleiste
+  mit Akzent-Knopf „Übernehmen“); Inhalt wird selbst gezeichnet (`Report`: Zeilen mit „:“ am Ende = Zwischenüberschrift,
+  „  •  “ = Aufzählung). Passwort-Dialog (`PasswordDialog`) ebenso, Eingabefelder als `TextField`.
+- **Entfernt: Export für ESP32 / nRF52840 und Funkadapter.** Der Weg über eine eigene Funkplatine ist verworfen
+  (10.10.2026). Der Export war seit 1.0.19 ausgeblendet; in 1.0.22 sind auch der Code (`Esp32Export`,
+  `AdapterProtocol`, `AdapterConnection`/`AdapterLink`, `WindowsBtDevices`), das Paket System.IO.Ports und die
+  Einstellungen `UseAdapter`/`AdapterPort` entfernt – alte settings.json mit diesen Feldern laden weiter (unbekannte
+  Felder werden überlesen). Die gemerkte Art je Controller (`Settings.ControllerKinds`, `RememberKind`) bleibt: Sie
+  dient der Kodi-Anzeige getrennter Controller (Abschnitt 14).
+
+## 14. Programm
+
+- **Autostart** (Standard an beim ersten Start, danach Nutzerentscheidung): HKCU\…\Run mit `--autostart`
+  (unsichtbar starten). Zweiter Start zeigt das Fenster der laufenden Instanz.
+- **Darstellung**: Farbmodus Dunkel (Standard), Hell, Wie Windows (`Settings.Theme` = `dark`/`light`/`system`; auch
+  „Dunkel“ wird ausdrücklich gespeichert, null heißt „nie gewählt“ und gilt als Dunkel); dazu **Farbschema**
+  (`Theme.Schemes`, `Settings.ColorScheme`, Auswahl als Vorschau-Kacheln `SchemePicker` unter *Allgemein → Darstellung*):
+  - **Windows** (Standard): Farben von Windows 11/Fluent – Hintergrund #202020, Karten #2B2B2B, Steuerelemente
+    #373737, Akzent Windows-Blau (dunkel #4CC2FF mit schwarzer Schrift wie in Windows, hell #005FB8 mit weißer);
+    keine Verläufe, kein Leuchten (`Theme.Neon` = false), Schriftzug schlicht in Textfarbe.
+  - **Neon** (Navy, Blau → Violett), **Aurora** (Türkis → Grün), **Sunset** (Orange → Pink), **Joy-Con**
+    (Neonrot → Neonblau): Verläufe (`Theme.AccentBrush`/`LineBrush`), Leuchten (`Theme.Glow`), Linien im dunklen
+    Modus aufgehellt (`Theme.AccentLine`).
+  Kontraste nachgerechnet (WCAG): Schrift auf Akzent ≥ 4,5 : 1, Text ≥ 15 : 1, gedämpfter Text ≥ 6 : 1. Knöpfe und
+  Felder haben einen eigenen, kräftigeren Rand (`Palette.ControlBorder`) als Karten; Auswahlfelder zeichnet
+  `Theme.ComboSkin` selbst (Windows malt sie sonst grau), sie wachsen auf den längsten übersetzten Eintrag. Die
+  Controller-Grafik leuchtet in der Schemafarbe (`Palette.Pressed`). **Nicht** die Windows-Akzentfarbe des Nutzers
+  (sieht je nach Wahl beliebig aus). Mica-Titelleiste ab Windows 11, ohne Mica Titelleiste und Rand in Theme-Farben.
+- **Schrift und Skalierung**: Typografie wie Windows 11 (`UiFonts`: 12 / 14 / 14 semibold / 18 / 28 px). Die App
+  skaliert vollständig selbst (`UiScale`, alle Fenster `AutoScaleMode.None`): Faktor = System-DPI ÷ 96, alle festen
+  Maße über `UiScale.Px`. So sehen 100–200 % gleich aus, auch für Teile, die erst später entstehen (Karten, Reiter).
+  Einstellungszeilen legen breite Bedienelemente unter den Text, wenn daneben zu wenig Platz bliebe; das Hauptfenster
+  wird auf den Arbeitsbereich begrenzt (z. B. 150 % auf Full HD).
+- **Animationen** (`Anim`): weiche Übergänge für Hover, Schalter (Knopf gleitet), Segmente (Marke gleitet),
+  Akkubalken, Aufleuchten/Glühen der Karten. Ein gemeinsamer Takt läuft nur, solange sich etwas bewegt. Aus, wenn
+  Windows-Animationseffekte abgeschaltet sind und bei den Prüfhilfen `--render…` (Endzustände).
+- **Logo/Icon**: Vektor in der DevCat-Bildsprache (`Branding.DrawLogo`), wie SKZ Monitor und SKZ Remote: Gamepad mit
+  offenen Katzenohren und kleinen leuchtenden Cyan-Mandelaugen (Schlitzpupille), dünne Kontur im Iris-Verlauf
+  (Teal→Blau→Violett) nur um die Gesamtform, dunkles Gesicht, Amber-Nase, Tasten als Raute, Wi-Fi-Signal zwischen den
+  Ohren als Connect-Signatur. Grund überall derselbe Navy-Verlauf wie bei den SKZ-Icons (`TileTop`/`TileBottom`);
+  Motiv mit Abstand zum Rand (~65 % Breite). Vereinfacht sich bei kleinen Größen (ab 24 px Steuerkreuz/Tasten, ab
+  32 px Augen-Leuchten, ab 40 px Signal).
+  Fenstersymbol aus der eingebetteten ICO-Datei mit allen Größen (nicht `ExtractAssociatedIcon` – nur 32 px).
+  `--render-brand` erzeugt ICO (kleine Größen als 32-Bit-Bitmap, 256 px als PNG), PNG und Installer-Grafiken, ohne
+  ein Fenster zu öffnen – Ablauf und Zielorte der Dateien stehen in [BUILDING.md](BUILDING.md).
+- **Grafiken**: Pfeile (▲▼◀▶) zeichnet `InputView.Caption` als gleich große Dreiecke, die bei gedrehtem Controller
+  (quer gehaltener Joy-Con) mitdrehen; alle anderen Beschriftungen bleiben waagerecht lesbar.
+- **Sprache**: 12 Sprachen (de, en, es, fr, it, pt, nl, pl, ru, ja, zh, ko). „Automatisch (wie Windows)“ (Standard)
+  = Anzeigesprache von Windows (`Tr.WindowsLanguage`; ohne eigene Tabelle Englisch). In der App gewählt, wird es wie
+  „Dunkel“ ausdrücklich gespeichert (`Settings.Language` = `auto`); null heißt „nie gewählt“ und gilt ebenfalls als
+  „wie Windows“ – nur dann darf ein Setup die Sprache vorgeben. Übersetzt
+  wird über Tabellen mit dem deutschen Text als Schlüssel (`Tr.Texts.cs` = Englisch, `Tr.Lang*.cs`) und Muster für
+  Texte mit Platzhaltern (`Tr.cs` und je Sprache dieselben Muster in derselben Reihenfolge); aus mehreren Sätzen
+  zusammengesetzte Meldungen Satz für Satz. Fehlt ein Text, gilt Englisch, dann Deutsch. Die Kurzanleitung
+  (`WelcomeForm`, beim ersten Start und im Infobereich) wird absatzweise übersetzt, das Fenster wächst mit dem Text.
+  Vollständigkeit sichern die Unit-Tests `TranslationTests` (`tests/Switch2Pro.Bridge.Tests`): alle Tabellen mit
+  denselben Schlüsseln, keine doppelten, gleiche Muster, Zahlen/Namen bleiben erhalten, Stichproben bisheriger Lücken.
+- **Installer → App** (`installer/SKZ-Connect.iss`, `InstallerChoices`): Das Setup läuft mit Adminrechten und schreibt
+  deshalb keine Benutzereinstellungen (kein HKCU). Es startet SKZ Connect nach der Installation als angemeldeter Benutzer
+  mit `--setup-theme=dark|light|system` und `--setup-lang=xx` – die Sprache nur, wenn sie im Setup bewusst gewählt
+  wurde (`ChosenLangCode`): Das Setup schlägt die Windows-Sprache vor, wenn es sie anbietet, sonst Englisch (erster
+  Eintrag unter `[Languages]`). Weicht die Setup-Sprache davon ab, obwohl der Vorschlag der Sprache der App unter
+  „Automatisch“ entsprach, war es eine Wahl; fehlt dem Setup die Windows-Sprache (ISL-Datei beim Bauen nicht
+  vorhanden, z. B. Chinesisch – Inno Setup bringt sie nicht mit), wird nichts übergeben. Welche Sprachen das Setup
+  anbietet, sammelt `SetupLangs` beim Bauen (Sprachdateien aus dem Ordner des Compilers, `CompilerPath`). Die App
+  übernimmt die Werte einmalig, solange in settings.json noch nichts gewählt ist – die Sprache zusätzlich nur, wenn
+  sie von der Windows-Sprache abweicht. Fehlen die Argumente beim allerersten Start (im Setup „Jetzt starten“
+  abgewählt, weiteres Benutzerkonto), gilt die Wahl, die das Setup im eigenen Deinstallationsschlüssel in HKLM merkt
+  (`Inno Setup CodeFile: Language`/`Theme`, nur gelesen; Sprache leer, wenn nicht bewusst gewählt). Stilles Update
+  (Ein-Klick-Update, winget): keine Argumente, es ändert sich nichts. Werte älterer Setups (bis 1.0.21: `HKCU\Software\SKZ Connect\Language`/`Theme`)
+  übernimmt die installierte App beim nächsten Start einmalig und löscht sie. Die Setup-Seite „Darstellung“ wählt
+  die Wahl der letzten Installation vor. Anleitung im Programmordner in der Setup-Sprache: Deutsch `Anleitung.md`,
+  sonst `README.md` (englisch). Die Deinstallation entfernt den Autostart in allen angemeldeten Benutzerprofilen
+  (nur Einträge, die auf diese Installation zeigen).
+- **Kodi auf diesem PC** (`KodiStatusWriter`): Ist in einer Kodi-Installation (normal oder Microsoft Store) das
+  Add-on `service.skzconnect` installiert, schreibt SKZ Connect alle 3 s bei Änderung, sonst alle 10 s als Herzschlag
+  `userdata/addon_data/service.skzconnect/status.json` (gleiches Format wie der Linux-Dienst; die Berichtsrate zählt
+  nicht als Änderung). Ohne Add-on wird nichts geschrieben und kein Ordner angelegt; ob Kodi/Add-on da sind, wird alle
+  30 s neu geprüft (kein Neustart nötig). Felder u. a. `"platform": "windows"` und `"bluetooth"` aus dem
+  Bluetooth-Zustand (`ControllerManager.Bluetooth`, nicht aus dem Meldungstext): `on`, `off` (aus oder Suche startet
+  nicht), `missing` (kein Adapter / Bluetooth nicht erreichbar), `no_le` (Adapter ohne Bluetooth LE – Switch-2-Controller
+  gehen nicht, klassische schon). Beim Beenden einmal `{"state": "stopped", "platform": "windows"}`, damit Kodi nicht
+  noch bis zu 15 s verbundene Controller zeigt.
+- **Update**: Prüft beim Start (nach 10 s) GitHub-Releases (`v1.2.3`). Mit Installer im Release: Ein-Klick-Update –
+  Nachfrage, Download nur von GitHub, Größe und SHA-256 (falls angegeben) geprüft, stiller Installer, Neustart. Die
+  portable Variante lädt das ZIP und tauscht die EXE nach dem Beenden aus; ihre Nachfrage nennt deshalb keine
+  Administratorrechte. Builds der CI ohne Tag tragen die Vorabversion `<Version>-ci.<Lauf>` (`UpdateCheck.Label`,
+  angezeigt in den Einstellungen, der Diagnose und im Startprotokoll); für sie gilt das Release mit derselben Nummer
+  als neuer (`UpdateCheck.IsNewer`). Datei- und Setup-Version bleiben numerisch.
+- **Protokoll**: `%LOCALAPPDATA%\SKZ-Connect\bridge.log` (ab 1 MB einmal rotiert). Einstellungen:
+  `%APPDATA%\SKZ-Connect\settings.json` (bei Änderung von außen neu geladen, 300 ms entprellt).
+- **Einstellungsdatei unlesbar** (`Settings.Load`/`Save`): Gespeichert wird über eine Zwischendatei, die vorige Fassung
+  bleibt als `settings.json.bak`. Ist `settings.json` beim Start unlesbar, lädt SKZ Connect die `.bak`
+  (`RestoredFromBackup`, Meldung „Einstellungen wiederhergestellt“) oder die Standardwerte (`LoadError`, Meldung
+  „Einstellungen fehlerhaft“); ein Klick auf die Meldung zeigt die Datei im Explorer. Vor dem ersten Überschreiben
+  wird die unlesbare Datei einmalig als `settings.json.unlesbar-<yyyyMMdd-HHmmss>` aufbewahrt (`UnreadableCopy`), eine
+  ebenfalls unlesbare `.bak` als `settings.json.bak.unlesbar-…`; scheitert das Kopieren, wird nichts überschrieben.
+  Unlesbar beim Neuladen im Betrieb (auch wenn nur die ältere `.bak` lesbar wäre): Die Änderung wird verworfen, die
+  laufenden Werte bleiben (`KeepUnreadableOf`). Unbekannte Enum-Namen (neuere Version, Tippfehler) verwerfen nur den
+  einzelnen Wert, Groß/Klein-Dubletten in den Adress-Wörterbüchern werden zusammengeführt (letzter Wert gewinnt).
+- **Lizenzen Dritter** (*Allgemein → Erweitert*, Knopf „Öffnen“): öffnet `THIRD-PARTY-NOTICES.md` neben der EXE (Setup:
+  Programmordner, portable: im ZIP) im Programm, das für `.md` eingestellt ist, sonst im Editor; fehlt die Datei, die
+  Fassung auf GitHub. Das Portable-ZIP enthält zusätzlich `LICENSE`.
+- **Prüfhilfen**: `--demo`, `--demo-all`, `--demo-retro` (simulierte Controller), `--render <Ordner>`
+  (Controller-Grafiken, auch Joy-Con 1/2 quer, hochkant, Paar, Grip: `jc1_links_quer.png` …),
+  `--render-ui <Ordner> [--wide] [--en | --lang=xx] [--light]` (alle Seiten/Karten/Dialoge, auch
+  `ui_kopplungsdaten_*.png`), `--render-brand`, `--dump-ui <Datei> [--en | --lang=xx]` (Texte ohne eigene Übersetzung
+  in dieser Sprache; dazu `<Datei>.rueckfall.txt` mit allen Sprachen und den Texten, die dort nur über Englisch oder
+  gar nicht übersetzt werden).

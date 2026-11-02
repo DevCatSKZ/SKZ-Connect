@@ -1,0 +1,236 @@
+# Baut den Windows-Installer von SKZ Connect, prüft alle Projekte der Projektmappe und kompiliert die Android-App.
+# Download: GitHub → Actions → „SKZ Connect – Windows-Installer“ → letzter Lauf → Artifacts.
+# Ein Tag „v1.2.3“ erzeugt zusätzlich ein GitHub-Release mit Setup.exe und Portable-ZIP. Den Text liefert
+# docs/release-notes/v1.2.3.md, falls vorhanden – sonst erzeugt GitHub ihn aus den Commits.
+# Versionen: Release = Tag. Ohne Tag „<Version aus Switch2Pro.Bridge.csproj>-ci.<Lauf>“, eine Vorabversion des nächsten
+# Releases, die nie neuer aussieht als dieses (die Update-Prüfung bietet es an). Datei- und Installer-Version bleiben
+# numerisch.
+name: SKZ Connect – Windows-Installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+permissions:
+  contents: write
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      # Code-Signatur (optional): Zertifikat als Secrets hinterlegen, dann signieren die Schritte unten automatisch.
+      SIGNING_CERT_PFX: ${{ secrets.SIGNING_CERT_PFX }}
+      SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Öffentlichen Quellstand prüfen
+        run: python tools/check_public.py
+
+      - name: Version bestimmen
+        id: version
+        run: |
+          $base = (Select-Xml -Path src/Switch2Pro.Bridge/Switch2Pro.Bridge.csproj -XPath "/Project/PropertyGroup/Version").Node.InnerText
+          if ($base -notmatch '^\d+\.\d+\.\d+$') { throw "Version in Switch2Pro.Bridge.csproj nicht lesbar: '$base'" }
+          $v = "$base-ci.${{ github.run_number }}"
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $v = "${{ github.ref_name }}".Substring(1)
+            if ($v -ne $base) { Write-Host "::warning::Tag v$v passt nicht zur Version $base in Switch2Pro.Bridge.csproj" }
+          }
+          Write-Host "Version: $v"
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      # Baut die ganze Projektmappe (Windows-App, Protokoll, Linux-Dienst, Werkzeuge) und führt alle Tests aus –
+      # auch die der Android-App, die ohne Android-Workload laufen.
+      - name: Bauen und testen
+        run: dotnet test Switch2Pro.sln -c Release
+
+      # -p:Version=1.2.3-ci.7 ergibt Assembly- und Dateiversion 1.2.3.0; die Vorabversion steht in der InformationalVersion.
+      - name: App veröffentlichen (eine EXE, ohne .NET-Installation lauffähig)
+        run: >
+          dotnet publish src/Switch2Pro.Bridge -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          -p:Version=${{ steps.version.outputs.version }}
+          -o out/publish/win-x64
+
+      # Code-Signatur (entfernt die SmartScreen-Warnung „Der Computer wurde durch Windows geschützt“ mit der Zeit):
+      # nur, wenn ein Zertifikat als Secret hinterlegt ist – SIGNING_CERT_PFX (PFX als Base64) und SIGNING_CERT_PASSWORD.
+      - name: App signieren (falls Zertifikat hinterlegt)
+        if: env.SIGNING_CERT_PFX != ''
+        run: |
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\sign.pfx", [Convert]::FromBase64String($env:SIGNING_CERT_PFX))
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          & $signtool.FullName sign /f "$env:RUNNER_TEMP\sign.pfx" /p $env:SIGNING_CERT_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d "SKZ Connect" out/publish/win-x64/SKZ-Connect.exe
+          if ($LASTEXITCODE -ne 0) { throw "Signieren fehlgeschlagen" }
+
+      # Automatische Bildprüfung: Oberfläche in mehreren Varianten rendern (unsichtbarer Desktop). Stürzt die Oberfläche
+      # dabei ab, fällt es hier auf; die Bilder liegen als Artefakt „UI-Bilder“ zum Durchsehen bereit. Blockiert kein Release.
+      - name: Oberfläche prüfen (Bilder rendern)
+        continue-on-error: true
+        run: |
+          $exe = "out/publish/win-x64/SKZ-Connect.exe"
+          $runs = @(
+            @{ Dir = "de-100"; Args = "--demo-all --wide" },
+            @{ Dir = "ru-150"; Args = "--demo-all --scale=1.5 --lang=ru" },
+            @{ Dir = "en-hell"; Args = "--demo --light --lang=en" }
+          )
+          $failed = 0
+          foreach ($r in $runs) {
+            $p = Start-Process $exe -ArgumentList "--render-ui out/ui-check/$($r.Dir) $($r.Args)" -PassThru -Wait
+            $count = (Get-ChildItem "out/ui-check/$($r.Dir)" -Filter *.png -ErrorAction SilentlyContinue).Count
+            Write-Host "$($r.Dir): Exitcode $($p.ExitCode), $count Bilder"
+            # Ohne ViGEmBus (GitHub-Server) gibt es keine Demo-Controller und daher weniger Bilder.
+            if ($p.ExitCode -ne 0 -or $count -lt 8) { $failed++ }
+          }
+          if ($failed -gt 0) { throw "$failed Prüfläufe fehlgeschlagen" }
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        continue-on-error: true
+        with:
+          name: UI-Bilder
+          path: out/ui-check
+          if-no-files-found: ignore
+
+      - name: ViGEmBus-Installer holen (offizielles Release v1.22.0)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force installer/redist | Out-Null
+          gh release download v1.22.0 -R nefarius/ViGEmBus -D installer/redist-dl -p "*.msi" -p "*.exe"
+          $file = Get-ChildItem installer/redist-dl | Sort-Object { $_.Extension -ne ".msi" } | Select-Object -First 1
+          if (-not $file) { throw "Kein ViGEmBus-Installer im Release gefunden" }
+          Write-Host "ViGEmBus: $($file.Name)"
+          $sig = Get-AuthenticodeSignature $file.FullName
+          Write-Host "Signatur: $($sig.Status) – $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne "Valid") { throw "ViGEmBus-Installer ist nicht gültig signiert" }
+          Copy-Item $file.FullName ("installer/redist/ViGEmBus_Setup" + $file.Extension)
+
+      - name: HidHide-Installer holen (offizielles Release v1.5.230.0)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.5.230.0 -R nefarius/HidHide -D installer/hidhide-dl -p "*_x64.exe"
+          $file = Get-ChildItem installer/hidhide-dl -Filter *.exe | Select-Object -First 1
+          if (-not $file) { throw "Kein HidHide-Installer im Release gefunden" }
+          $sig = Get-AuthenticodeSignature $file.FullName
+          Write-Host "HidHide: $($file.Name) – Signatur: $($sig.Status) – $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne "Valid") { throw "HidHide-Installer ist nicht gültig signiert" }
+          Copy-Item $file.FullName installer/redist/HidHide_Setup.exe
+
+      - name: Inno Setup installieren
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      # Das Skript leitet die numerische Dateiversion des Setups selbst aus AppVersion ab (1.2.3-ci.7 → 1.2.3).
+      - name: Installer bauen
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.version }}" installer/SKZ-Connect.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup fehlgeschlagen" }
+          Get-ChildItem out/*.exe
+
+      - name: Installer signieren (falls Zertifikat hinterlegt)
+        if: env.SIGNING_CERT_PFX != ''
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          Get-ChildItem out/SKZ-Connect-Setup-*.exe | ForEach-Object {
+            & $signtool.FullName sign /f "$env:RUNNER_TEMP\sign.pfx" /p $env:SIGNING_CERT_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d "SKZ Connect Setup" $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Signieren fehlgeschlagen" }
+          }
+          Remove-Item "$env:RUNNER_TEMP\sign.pfx" -Force
+
+      - name: Portable-Variante packen (ZIP mit EXE, portable.txt, Lizenz und Drittanbieter-Hinweisen)
+        run: |
+          New-Item -ItemType Directory -Force out/portable | Out-Null
+          Copy-Item out/publish/win-x64/SKZ-Connect.exe, LICENSE, THIRD-PARTY-NOTICES.md out/portable/
+          Set-Content out/portable/portable.txt "SKZ Connect portable: Diese Datei sorgt dafür, dass Einstellungen und Protokoll im Unterordner 'data' neben der EXE liegen statt in %APPDATA%. ViGEmBus/HidHide müssen trotzdem pro PC installiert werden (sonst keine virtuellen Controller)."
+          Compress-Archive -Force out/portable/* "out/SKZ-Connect-Portable-${{ steps.version.outputs.version }}.zip"
+          Get-ChildItem out/*.zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SKZ-Connect-Setup
+          path: |
+            out/SKZ-Connect-Setup-*.exe
+            out/SKZ-Connect-Portable-*.zip
+          if-no-files-found: error
+
+      - name: Release-Text wählen (nur bei Tag v*)
+        id: notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $file = "docs/release-notes/${{ github.ref_name }}.md"
+          if (Test-Path $file) { "path=$file" >> $env:GITHUB_OUTPUT; Write-Host "Release-Text: $file" }
+          else { Write-Host "$file fehlt – GitHub erzeugt den Release-Text aus den Commits" }
+
+      - name: Release anlegen (nur bei Tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: ${{ steps.notes.outputs.path == '' }}
+          files: |
+            out/SKZ-Connect-Setup-*.exe
+            out/SKZ-Connect-Portable-*.zip
+
+  # Kompiliert die Android-App (Debug, ohne Signatur – das signierte APK entsteht lokal, siehe docs/ANDROID.md).
+  # Eigener Job: Das Release im Job „installer“ wartet nicht darauf, ein Fehler hier bleibt trotzdem sichtbar.
+  # Windows wie beim lokalen Bauen: gleiche Werkzeugkette, die Workload braucht keine Root-Rechte; JDK 21, weil neuere
+  # für .NET Android zu neu sind.
+  android:
+    name: Android kompilieren
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: "21"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Die Sprachdateien der App werden aus android/i18n erzeugt – vergessene oder von Hand geänderte fallen hier auf.
+      - name: Übersetzungen aktuell
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          python android/i18n/generate.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Android-Workload installieren
+        run: dotnet workload install android
+
+      # Ergänzt fehlende Pakete im Android-SDK des Runners (Plattform und Build-Tools, die .NET Android verlangt).
+      - name: Android-SDK vervollständigen
+        run: >
+          dotnet build android/SkzConnect.Android -t:InstallAndroidDependencies -f net10.0-android
+          "-p:AndroidSdkDirectory=$env:ANDROID_HOME" "-p:JavaSdkDirectory=$env:JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+
+      - name: Android-App kompilieren (Debug)
+        run: >
+          dotnet build android/SkzConnect.Android -c Debug
+          "-p:AndroidSdkDirectory=$env:ANDROID_HOME" "-p:JavaSdkDirectory=$env:JAVA_HOME"

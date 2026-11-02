@@ -1,0 +1,117 @@
+namespace Switch2Pro.Bridge;
+
+internal static class Program
+{
+    /// <summary>Wird gesetzt, wenn die App ein zweites Mal gestartet wird (Fenster zeigen).</summary>
+    public static EventWaitHandle? ShowSignal { get; private set; }
+
+    [STAThread]
+    private static void Main()
+    {
+        var args = Environment.GetCommandLineArgs();
+        // Geplante Aufgabe des Installers (als SYSTEM): Controller per HidHide verstecken, sonst nichts. Muss als Erstes
+        // geprüft werden, damit weitere Argumente in diesem Aufruf nichts anderes auslösen.
+        if (args.Contains("--hidhide-helper", StringComparer.OrdinalIgnoreCase))
+        {
+            Environment.Exit(HidHide.RunHelper(args));
+            return;
+        }
+        // Logo, Programm-Icon und Installer-Grafiken erzeugen.
+        int brand = Array.IndexOf(args, "--render-brand");
+        if (brand >= 0 && brand + 1 < args.Length)
+        {
+            Branding.RenderAll(args[brand + 1]);
+            return;
+        }
+        // Prüfhilfen öffnen echte Fenster: auf einem eigenen, unsichtbaren Desktop neu starten, damit beim Benutzer
+        // nichts aufgeht und Fokus/Maus unberührt bleiben.
+        int? exitCode = null;
+        try
+        {
+            if (UiForm.Offscreen)
+                exitCode = HiddenDesktop.RunIsolated();
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText(Path.Combine(Path.GetTempPath(), "SKZ-Connect-Pruefhilfe-Fehler.txt"), "Elternprozess: " + e + Environment.NewLine);
+        }
+        if (exitCode is { } code)
+        {
+            Environment.Exit(code);
+            return;
+        }
+        if (HiddenDesktop.Active)
+        {
+            // Auf dem unsichtbaren Desktop sieht niemand eine Fehlermeldung: Fehler in eine Datei schreiben.
+            static void Report(object? error) =>
+                File.AppendAllText(Path.Combine(Path.GetTempPath(), "SKZ-Connect-Pruefhilfe-Fehler.txt"), error + Environment.NewLine);
+            AppDomain.CurrentDomain.UnhandledException += (_, e) => Report(e.ExceptionObject);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+        }
+        // Prüfhilfe: alle Controller-Grafiken als PNG speichern (ohne Controller, ohne Fenster).
+        int render = Array.IndexOf(args, "--render");
+        if (render >= 0 && render + 1 < args.Length)
+        {
+            UiForm.LockForeground();
+            ApplicationConfiguration.Initialize();
+            Theme.Init(args.Contains("--light") ? "light" : "dark", transparency: false, SchemeArg(args));
+            RenderCheck.Run(args[render + 1]);
+            return;
+        }
+        // --scheme=xx wählt das Farbschema für die Prüfhilfen (neon, aurora, sunset, joycon).
+        static string? SchemeArg(string[] args) =>
+            args.FirstOrDefault(x => x.StartsWith("--scheme=", StringComparison.Ordinal)) is { } s ? s["--scheme=".Length..] : null;
+        // --lang=xx wählt die Sprache für die Prüfhilfen (Standard: de, --en bleibt als Kurzform).
+        static string LangArg(string[] args)
+        {
+            var a = args.FirstOrDefault(x => x.StartsWith("--lang=", StringComparison.Ordinal));
+            return a is not null ? a["--lang=".Length..] : args.Contains("--en") ? "en" : "de";
+        }
+        int renderUi = Array.IndexOf(args, "--render-ui");
+        if (renderUi >= 0 && renderUi + 1 < args.Length)
+        {
+            UiForm.LockForeground();
+            ApplicationConfiguration.Initialize();
+            Tr.SetLanguage(LangArg(args));
+            Theme.Init(args.Contains("--light") ? "light" : "dark", transparency: false, SchemeArg(args));
+            RenderCheck.RenderUi(args[renderUi + 1]);
+            return;
+        }
+        // Prüfhilfe für die Übersetzung: alle Texte der Fenster ausgeben (und welche noch nicht übersetzt sind).
+        int dump = Array.IndexOf(args, "--dump-ui");
+        if (dump >= 0 && dump + 1 < args.Length)
+        {
+            UiForm.LockForeground();
+            ApplicationConfiguration.Initialize();
+            Tr.SetLanguage(LangArg(args));
+            Theme.Init(args.Contains("--light") ? "light" : "dark", transparency: false, SchemeArg(args));
+            RenderCheck.DumpTexts(args[dump + 1]);
+            return;
+        }
+
+        // Nur eine Instanz pro Benutzer: zwei Programme würden um denselben Controller streiten.
+        using var mutex = new Mutex(true, @"Local\SKZ Connect", out bool first);
+        using var showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\SKZ-Connect.Show");
+        if (!first)
+        {
+            // Läuft schon: dort das Fenster öffnen, statt still zu beenden.
+            showSignal.Set();
+            return;
+        }
+        ShowSignal = showSignal;
+        Autostart.Repair();
+
+        Log.Info($"Start, Version {UpdateCheck.Label}, Windows {Environment.OSVersion.Version}");
+        Application.ThreadException += (_, e) => Log.Error("Unbehandelter Fehler (UI)", e.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error("Unbehandelter Fehler", e.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Log.Error("Unbeobachteter Task-Fehler", e.Exception);
+            e.SetObserved();
+        };
+
+        ApplicationConfiguration.Initialize();
+        Application.Run(new TrayApp());
+        Log.Info("Ende");
+    }
+}

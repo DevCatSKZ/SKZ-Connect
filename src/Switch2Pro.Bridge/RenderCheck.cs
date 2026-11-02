@@ -1,0 +1,466 @@
+using System.Drawing;
+using System.Drawing.Imaging;
+using Switch2Pro.Protocol;
+
+namespace Switch2Pro.Bridge;
+
+/// <summary>
+/// Prüfhilfe (<c>--render &lt;Ordner&gt;</c>): zeichnet jede Controller-Art einmal in Ruhe und einmal mit gedrückten
+/// Tasten/ausgelenkten Sticks und speichert die Bilder als PNG. So lassen sich Grafiken ohne Hardware prüfen.
+/// </summary>
+internal static class RenderCheck
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
+
+    /// <summary>
+    /// Alle sichtbaren Texte der Fenster (Steuerelemente, Listen) in eine Datei schreiben – je Zeile ein Text. Mit
+    /// <c>--en</c> bzw. <c>--lang=xx</c> nur die Texte ohne eigene Übersetzung; dazu <c>&lt;Datei&gt;.rueckfall.txt</c>
+    /// mit allen Sprachen und den Texten, die dort nur über Englisch (oder gar nicht) übersetzt werden.
+    /// </summary>
+    public static void DumpTexts(string file)
+    {
+        // Deutsche Originaltexte sammeln (Fenster auf Deutsch aufbauen) und danach einzeln prüfen.
+        string language = Tr.Lang;
+        Tr.SetLanguage("de");
+        var texts = new SortedSet<string>(StringComparer.Ordinal);
+        void Walk(Control c)
+        {
+            if (!string.IsNullOrWhiteSpace(c.Text))
+                texts.Add(c.Text);
+            if (c is IExtraTexts extra)
+                texts.UnionWith(extra.ExtraTexts.Where(t => t.Length > 0));
+            if (c is ComboBox combo)
+                foreach (var item in combo.Items)
+                    if (item?.ToString() is { Length: > 0 } s)
+                        texts.Add(s);
+            foreach (Control child in c.Controls)
+                Walk(child);
+        }
+        var settings = new Settings();
+        using (var form = new SettingsForm(settings, _ => { }, null))
+        {
+            Walk(form);
+        }
+        foreach (var kind in Enum.GetValues<ControllerKind>())
+        {
+            texts.Add(kind.DisplayName());
+            foreach (var b in ControllerButtons.For(kind))
+                texts.Add(ControllerButtons.Label(b, kind));
+        }
+        using (var welcome = new WelcomeForm())
+            Walk(welcome);
+        // Die Kurzanleitung wird absatzweise übersetzt – Absätze statt des ganzen Textes prüfen.
+        texts.Remove(WelcomeForm.Guide);
+        texts.UnionWith(WelcomeForm.Paragraphs);
+        using (var capture = new KeyCaptureDialog("X"))
+            Walk(capture);
+        using (var wii = new PairForm(null))
+            Walk(wii);
+        using (var pairing = new PairingDataForm(settings, () => { }))
+            Walk(pairing);
+        texts.UnionWith(PairingDataForm.ExplanationTexts);
+        // Meldungen, die zur Laufzeit zusammengesetzt werden (alle Fehlerfälle und Hinweise).
+        string pro = ControllerKind.Pro2.DisplayName(), jc = ControllerKind.JoyCon2Left.DisplayName();
+        foreach (var problem in new[] { "Kein Bluetooth-Adapter gefunden.", "Bluetooth ist ausgeschaltet.", "Dieser Bluetooth-Adapter unterstützt kein Bluetooth LE." })
+            texts.Add(problem + " " + ControllerManager.AdapterHint(problem));
+        texts.UnionWith(
+        [
+            "Bluetooth ist bereit – Controller können verbunden werden.",
+            "ViGEmBus-Treiber fehlt – ohne ihn kann kein virtueller Controller erzeugt werden. Bitte das Setup erneut ausführen.",
+            $"{pro} per USB ist von einem anderen Programm belegt (z. B. Steam). Das Programm schließen oder in Steam die Nintendo-Unterstützung abschalten.",
+            $"Schon 8 Controller verbunden – {jc} wird nicht verwendet. Erst einen anderen trennen.",
+            $"{pro}: schwache Bluetooth-Verbindung (14 statt 33–60 Berichte/s). Tipp: Bluetooth-Stick per Verlängerung näher an den Controller, weg von USB-3-Anschlüssen und Funkkopfhörern.",
+            "Controller mit dem PC gekoppelt – ab jetzt reicht ein Tastendruck. Hinweis: Um ihn wieder an der Switch 2 zu nutzen, dort einmal kurz SYNC drücken.",
+            $"{pro} verbunden (Spieler 1)", $"{jc} getrennt", "Joy-Con zusammengefasst (Spieler 2)",
+            $"Joy-Con getrennt – {jc} ist jetzt Spieler 3", $"Spieler 1: Akku {jc} fast leer (14 %) – bitte aufladen",
+            "Spieler 2: nach 15 min ohne Eingabe getrennt",
+            "Profil „Zelda“ aktiv", "Bluetooth LE · 33 Berichte/s", "60 %  (3,70 V)  ⚡ lädt",
+            $"Spieler 1  ·  {pro}  ·  Gyro-Maus", "Erst den Ring-Con ausschalten (Ring-Con und IR-Kamera nutzen denselben Zusatzprozessor).",
+            "Xbox · Platz 1 · nativ", "Xbox · nativ", "SKZ Connect: Bluetooth ist ausgeschaltet.", "SKZ Connect: ViGEmBus fehlt",
+            $"Gekoppelt: {pro}\nDer Controller erscheint gleich in der Übersicht.",
+            "Mitte 2048 / 2048 · Abweichung vom Kreis: vorher 12 %, neu 3 %", "320 × 240 · 12,5 Bilder/s",
+            "Beim Drücken von „A“ wird diese Folge einmal abgespielt. Schritte durch Komma trennen …",
+            "Version 1.0.22 herunterladen und installieren? SKZ Connect wird dafür kurz beendet und danach wieder gestartet.",
+            "Version 1.0.22 herunterladen und installieren? SKZ Connect wird dafür kurz beendet und danach wieder gestartet. " +
+            "Windows fragt dabei nach Administratorrechten.",
+            "HidHide 1.5.230 herunterladen und installieren? Das HidHide-Setup entfernt zuerst die alte Version und verlangt einen " +
+            "Neustart von Windows – bitte seinen Anweisungen folgen. Windows fragt dabei nach Administratorrechten. Danach " +
+            "versteckt SKZ Connect die Controller automatisch neu.",
+        ]);
+
+        Tr.SetLanguage(language);
+        File.WriteAllLines(file + ".alle.txt", texts.Select(t => Tr.T(t)).Distinct());
+        // Bei fremder Oberfläche: nur Texte ausgeben, die keine eigene Übersetzung haben (Englisch: oder danach noch
+        // deutsch aussehen); auf Deutsch alle.
+        IEnumerable<string> lines = language switch
+        {
+            "de" => texts,
+            "en" => texts.Where(t => (Tr.T(t) == t && NeedsTranslation(t)) || LooksGerman(Tr.T(t))),
+            _ => texts.Where(t => NeedsTranslation(t) && !Tr.HasOwnTranslation(t, language)),
+        };
+        File.WriteAllLines(file, lines.Select(OneLine));
+
+        // Für jede Sprache: Texte, die nur über den Rückfall (Englisch, sonst Deutsch) aufgelöst werden.
+        var fallback = new List<string>();
+        foreach (var lang in Tr.Supported.Where(l => l != "de"))
+        {
+            var missing = texts.Where(t => NeedsTranslation(t) && !Tr.HasOwnTranslation(t, lang)).ToList();
+            fallback.Add($"[{lang}] {missing.Count}");
+            fallback.AddRange(missing.Select(t => "  " + OneLine(t)));
+        }
+        File.WriteAllLines(file + ".rueckfall.txt", fallback);
+    }
+
+    private static string OneLine(string t) => t.Replace("\r", "").Replace("\n", "\\n");
+
+    /// <summary>Enthält der Text Wörter (nicht nur Namen, Zahlen, Tasten wie „ZL“ oder Marken)?</summary>
+    private static bool NeedsTranslation(string t)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(t, "[a-zäöüß]{3}"))
+            return false;
+        string[] sameInEnglish =
+        [
+            "SKZ Connect", "Xbox", "Nintendo", "linear", "Bluetooth", "Joy-Con", "DualShock", "Normal", "Charging Grip", "Version",
+            "PlayStation", "English", "Deutsch", "Wii", "amiibo", "Ring-Con", "HOME", "Gyro", "Turbo", "Firmware", "Controller",
+        ];
+        return !sameInEnglish.Any(w => t.Equals(w, StringComparison.Ordinal))
+               && !t.StartsWith("Nintendo ", StringComparison.Ordinal) && !t.StartsWith("Version ", StringComparison.Ordinal);
+    }
+
+    private static bool LooksGerman(string t) =>
+        t.IndexOfAny(['ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß']) >= 0
+        || new[] { " und ", " der ", " die ", " das ", "Taste", "Spieler", " mit ", " nach ", "Belegung", "Einstellung" }
+            .Any(w => t.Contains(w, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Prüfhilfe (<c>--render-ui &lt;Ordner&gt; [--en]</c>): Einstellungsfenster in voller Höhe und die Übersicht mit
+    /// simulierten Controllern als PNG – zum Prüfen von Übersetzung und abgeschnittenen Beschriftungen.
+    /// </summary>
+    public static void RenderUi(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        string lang = Tr.Lang;
+        string variant = (Environment.GetCommandLineArgs().Contains("--demo-all") ? "_alle" : Environment.GetCommandLineArgs().Contains("--demo-retro") ? "_retro" : "")
+                         + (Environment.GetCommandLineArgs().Contains("--wide") ? "_breit" : "")
+                         + (Environment.GetCommandLineArgs().Contains("--compact") ? "_kompakt" : "");
+        var log = new List<string> { $"Unsichtbarer Desktop: {(UiForm.Isolated ? "ja" : "nein")}, Skalierung {UiScale.Factor:0.##}" };
+        using var factory = PadFactory.TryCreate();
+        ControllerManager? manager = factory is null ? null : new ControllerManager(() => new Settings(), factory);
+        try
+        {
+            manager?.StartDemo();
+            // Als echtes Fenster außerhalb des sichtbaren Bereichs anzeigen, damit alle Steuerelemente entstehen.
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            // --compact: Controller-Übersicht in der kompakten Ansicht prüfen.
+            var uiSettings = new Settings
+            {
+                CompactCards = Environment.GetCommandLineArgs().Contains("--compact"), ColorScheme = Theme.ActiveScheme.Id,
+                ShowControllerImages = !Environment.GetCommandLineArgs().Contains("--buttons-only"),
+            };
+            using var form = new SettingsForm(uiSettings, _ => { }, manager, wiiPairing: () => { })
+            {
+                StartPosition = FormStartPosition.Manual, Location = new Point(-6000, -6000), ShowInTaskbar = false, ShowInactive = true,
+                Size = Environment.GetCommandLineArgs().Contains("--wide") ? new Size(1900, 1040) : new Size(1220, 900),
+            };
+            form.Show();
+            log.Add($"Fenster erzeugt und gezeigt: {sw.ElapsedMilliseconds} ms");
+            void Pump()
+            {
+                for (int i = 0; i < 20; i++)
+                {
+                    Application.DoEvents();
+                    Thread.Sleep(20);
+                }
+            }
+            // So, wie Windows das Fenster wirklich zeichnet (DrawToBitmap zeigt manche Steuerelemente nur im Grundzustand).
+            void Window(string name)
+            {
+                using var bmp = new Bitmap(form.Width, form.Height);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    var hdc = g.GetHdc();
+                    PrintWindow(form.Handle, hdc, 2); // PW_RENDERFULLCONTENT
+                    g.ReleaseHdc(hdc);
+                }
+                bmp.Save(Path.Combine(folder, $"{name}{variant}_{lang}.png"), ImageFormat.Png);
+            }
+            static void Full(Control c, string path)
+            {
+                using var bmp = new Bitmap(Math.Max(1, c.Width), Math.Max(1, c.Height));
+                c.DrawToBitmap(bmp, new Rectangle(0, 0, c.Width, c.Height));
+                bmp.Save(path, ImageFormat.Png);
+            }
+            Pump();
+            Window("ui_0_controller");
+            // Beide Darstellungen über denselben Umschalter wie in der GUI prüfen.
+            if (form.Overview.Controls.OfType<StatusBand>().SingleOrDefault() is { } status)
+            {
+                bool initialImages = uiSettings.ShowControllerImages;
+                foreach (bool showImages in new[] { true, false, initialImages })
+                {
+                    status.DisplayMode.SelectedIndex = showImages ? 0 : 1;
+                    Pump();
+                    if (uiSettings.ShowControllerImages != showImages)
+                        throw new InvalidOperationException("Controllerdarstellung wurde nicht übernommen.");
+                    Window(showImages ? "ui_controller_mit_bild" : "ui_controller_nur_tasten");
+                }
+                log.Add("Controllerbilder / Nur Tasten: umgeschaltet und Ausgangsansicht wiederhergestellt.");
+            }
+
+            // Karte aufgeklappt: jeder Reiter einmal (ganze Karte, auch wenn sie länger als das Fenster ist).
+            // Jede Karte (jeder Controller), jeder Reiter, den dieser Controller hat.
+            var cards = form.Overview.Cards;
+            if (Environment.GetCommandLineArgs().Contains("--overview-only"))
+            {
+                for (int c = 0; c < cards.Count; c++)
+                    Full(cards[c], Path.Combine(folder, $"ui_card{c + 1}_uebersicht{variant}_{lang}.png"));
+                if (Environment.GetCommandLineArgs().Contains("--badge-overlays") && manager is not null)
+                {
+                    foreach (var player in manager.Players.Take(4))
+                    {
+                        ConnectOverlay.ShowFor(player, player.Links[0], new Settings());
+                        Pump();
+                        if (Application.OpenForms.OfType<ConnectOverlay>().LastOrDefault() is { } overlay)
+                            Full(overlay, Path.Combine(folder, $"ui_spieler{player.Index + 1}_einblendung.png"));
+                    }
+                }
+                form.Close();
+                return;
+            }
+            for (int c = 0; c < cards.Count; c++)
+            {
+                for (int tab = 0; tab < 7; tab++)
+                {
+                    sw.Restart();
+                    bool shown = ControllerOverview.ExpandCard(cards[c], tab);
+                    form.Update();
+                    long ms = sw.ElapsedMilliseconds;
+                    if (!shown)
+                        continue;
+                    log.Add($"Karte {c + 1}, Reiter {tab}: {ms} ms");
+                    Pump();
+                    Full(cards[c], Path.Combine(folder, $"ui_card{c + 1}_{tab}{variant}_{lang}.png"));
+                }
+            }
+            if (cards.Count > 0)
+                ControllerOverview.ExpandCard(cards[0], 0);
+            Pump();
+            Window("ui_0_controller_offen");
+
+            // Übrige Seiten: Fenster und ganzer Inhalt.
+            var pages = form.Pages;
+            for (int i = 1; i < pages.Count; i++)
+            {
+                sw.Restart();
+                form.ShowPage(i);
+                log.Add($"Seite {i} ({pages[i].Name}): {sw.ElapsedMilliseconds} ms");
+                Pump();
+                Window($"ui_{i}_seite");
+                if (pages[i].Page is ScrollPage scroll)
+                    Full(scroll.Content, Path.Combine(folder, $"ui_{i}_inhalt{variant}_{lang}.png"));
+            }
+
+            // Unterpunkt-Filter: auf der letzten Seite jede Gruppe einzeln zeigen (Navigation → Bereich).
+            if (pages[^1].Page is ScrollPage last)
+                foreach (var heading in last.Content.Controls.OfType<Heading>().Where(h => !h.IsPage))
+                {
+                    last.ShowOnly(heading.Text);
+                    Full(last.Content, Path.Combine(folder,
+                        $"ui_{pages.Count - 1}_bereich_{string.Join('_', heading.Text.Split(' '))}{variant}_{lang}.png"));
+                }
+            (pages[^1].Page as ScrollPage)?.ShowOnly(null);
+
+            // Fenster „Kopplungsdaten“ mit einer nachgebauten Switch-SD-Karte (ausgedachte Daten, Ordner im Temp-Verzeichnis).
+            string sd = Path.Combine(Path.GetTempPath(), "skzconnect-render-sd");
+            Directory.CreateDirectory(Path.Combine(sd, "Nintendo"));
+            Directory.CreateDirectory(Path.Combine(sd, "switchroot"));
+            File.WriteAllText(Path.Combine(sd, SwitchCard.IniFile),
+                "[joycon_00]\ntype=1\nmac=AA:BB:CC:00:11:22\nhost=98:B6:E9:01:02:03\nltk=00112233445566778899AABBCCDDEEFF\n\n" +
+                "[joycon_01]\ntype=2\nmac=AA:BB:CC:33:44:55\nhost=98:B6:E9:01:02:03\nltk=FFEEDDCCBBAA99887766554433221100\n");
+            using (var pairing = new PairingDataForm(new Settings(), () => { }, SwitchCard.Inspect(sd))
+                   { StartPosition = FormStartPosition.Manual, Location = new Point(-6000, -6000), ShowInTaskbar = false })
+            {
+                pairing.Show();
+                for (int i = 0; i < 50; i++)
+                {
+                    Application.DoEvents();
+                    Thread.Sleep(20);
+                }
+                using var bmp = new Bitmap(pairing.Width, pairing.Height);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    var hdc = g.GetHdc();
+                    PrintWindow(pairing.Handle, hdc, 2);
+                    g.ReleaseHdc(hdc);
+                }
+                bmp.Save(Path.Combine(folder, $"ui_kopplungsdaten_{lang}.png"), ImageFormat.Png);
+                pairing.Close();
+            }
+            Directory.Delete(sd, recursive: true);
+
+            // Weitere Fenster mit dem ersten simulierten Controller (Stick-Kalibrierung, Gyro-Assistent).
+            void Snap(Form dialog, string name)
+            {
+                dialog.StartPosition = FormStartPosition.Manual;
+                dialog.Location = new Point(-6000, -6000);
+                dialog.ShowInTaskbar = false;
+                dialog.Show();
+                for (int i = 0; i < 40; i++)
+                {
+                    Application.DoEvents();
+                    Thread.Sleep(20);
+                }
+                using var bmp = new Bitmap(dialog.Width, dialog.Height);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    var hdc = g.GetHdc();
+                    PrintWindow(dialog.Handle, hdc, 2);
+                    g.ReleaseHdc(hdc);
+                }
+                bmp.Save(Path.Combine(folder, $"ui_{name}{variant}_{lang}.png"), ImageFormat.Png);
+                dialog.Close();
+            }
+            if (manager?.Players.FirstOrDefault(StickCalibrationForm.CanCalibrate) is { } calibratable)
+                using (var sticks = new StickCalibrationForm(calibratable, () => new Settings(), () => { }))
+                    Snap(sticks, "sticks");
+            if (manager?.Players.FirstOrDefault() is { } anyPlayer)
+                using (var gyro = new GyroSetupForm(anyPlayer, () => new Settings(), () => { }))
+                    Snap(gyro, "gyro");
+            using (var pairing = new PairForm(null) { Preview = Tr.T(ControllerKind.JoyCon1Left.DisplayName()) })
+                Snap(pairing, "koppeln");
+            // Desktop-Widget: normal, kompakt und ohne Controller.
+            foreach (var (name, compact, empty) in new[] { ("widget", false, false), ("widget_kompakt", true, false), ("widget_leer", false, true) })
+            {
+                var widgetSettings = new Settings { DesktopWidget = true, WidgetCompact = compact, WidgetOpacity = 100 };
+                using var widget = new ControllerWidget(empty ? null : manager, () => widgetSettings, () => { }, () => { })
+                    { Location = new Point(-6000, -6000) };
+                widget.Show();
+                Pump();
+                Full(widget, Path.Combine(folder, $"ui_{name}{variant}_{lang}.png"));
+                widget.Close();
+            }
+
+            // Einblendung beim Verbinden (läuft hier auf dem unsichtbaren Desktop, stört also niemanden).
+            if (manager?.Players.FirstOrDefault(p => p.Links.Count > 0) is { } overlayPlayer)
+            {
+                ConnectOverlay.ShowFor(overlayPlayer, overlayPlayer.Links[0], new Settings());
+                Pump();
+                if (Application.OpenForms.OfType<ConnectOverlay>().LastOrDefault() is { } overlay)
+                    Full(overlay, Path.Combine(folder, $"ui_einblendung{variant}_{lang}.png"));
+            }
+
+            // Meldungsfenster im Design: kurz anzeigen, abfotografieren, schließen.
+            var shot = new System.Windows.Forms.Timer { Interval = 400 };
+            shot.Tick += (_, _) =>
+            {
+                shot.Stop();
+                var message = Application.OpenForms.Cast<Form>().Last();
+                Full(message, Path.Combine(folder, $"ui_message_{lang}.png"));
+                message.Close();
+            };
+            shot.Start();
+            Tr.Show(form, "Alle Einstellungen und Tastenbelegungen auf Standard zurücksetzen?", "SKZ Connect", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            shot.Dispose();
+            form.Close();
+        }
+        catch (Exception e)
+        {
+            log.Add($"FEHLER: {e}");
+        }
+        finally
+        {
+            File.WriteAllLines(Path.Combine(folder, $"timing{variant}_{lang}.txt"), log);
+            if (manager is not null)
+                Task.Run(async () => await manager.DisposeAsync()).Wait(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    public static void Run(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        var kinds = new (ControllerKind Kind, WiiExtension Ext, string Name)[]
+        {
+            (ControllerKind.Pro2, WiiExtension.None, "pro2"),
+            (ControllerKind.Pro1, WiiExtension.None, "pro1"),
+            (ControllerKind.Unknown, WiiExtension.None, "generic"),
+            (ControllerKind.GameCube2, WiiExtension.None, "gamecube"),
+            (ControllerKind.SnesController, WiiExtension.None, "snes"),
+            (ControllerKind.NesController, WiiExtension.None, "nes"),
+            (ControllerKind.N64Controller, WiiExtension.None, "n64"),
+            (ControllerKind.MegaDrive, WiiExtension.None, "megadrive"),
+            (ControllerKind.WiiRemote, WiiExtension.None, "wii"),
+            (ControllerKind.WiiRemote, WiiExtension.MotionPlus, "wii_motionplus"),
+            (ControllerKind.WiiRemote, WiiExtension.Nunchuk, "wii_nunchuk"),
+            (ControllerKind.WiiRemote, WiiExtension.Classic, "wii_classic"),
+            (ControllerKind.WiiRemote, WiiExtension.MotionPlusNunchuk, "wii_motionplus_nunchuk"),
+            (ControllerKind.WiiUPro, WiiExtension.None, "wiiupro"),
+            (ControllerKind.DualShock4, WiiExtension.None, "dualshock4"),
+            (ControllerKind.DualSense, WiiExtension.None, "dualsense"),
+            (ControllerKind.XboxController, WiiExtension.None, "xbox"),
+        };
+        foreach (var (kind, ext, name) in kinds)
+        {
+            foreach (bool pressed in new[] { false, true })
+            {
+                using var view = new InputView { Size = new Size(580, 410), WiiExtension = ext,
+                    ButtonsOnly = Environment.GetCommandLineArgs().Contains("--buttons-only") };
+                // Bei Sony-Pads im Pressed-Bild die Lichtleiste einfärben (wie ein Spiel sie setzt).
+                if (pressed && kind is ControllerKind.DualShock4 or ControllerKind.DualSense)
+                    view.LightbarTint = Color.FromArgb(0x3C, 0xE0, 0x78);
+                var input = new PadInput
+                {
+                    Kind = kind,
+                    Buttons = pressed ? ProButtons.A | ProButtons.Up | ProButtons.L | ProButtons.Plus | ProButtons.ZL : ProButtons.None,
+                    LeftX = pressed ? 0.8f : 0, LeftY = pressed ? 0.5f : 0, RightX = pressed ? 1 : 0, RightY = 0,
+                    LeftTrigger = pressed ? 0.6f : 0, RightTrigger = 0,
+                    Pointer = pressed && kind == ControllerKind.WiiRemote ? (0.3f, 0.6f) : null,
+                };
+                var gamepad = Mapping.ToGamepad(input, new Settings());
+                view.Show(input, gamepad);
+                using var bmp = new Bitmap(580, 410);
+                view.DrawToBitmap(bmp, new Rectangle(0, 0, 580, 410));
+                bmp.Save(Path.Combine(folder, $"{name}{(pressed ? "_pressed" : "")}.png"), ImageFormat.Png);
+            }
+        }
+
+        // Joy-Con: einzeln quer, einzeln hochkant, Paar, Charging Grip – je Joy-Con 1 und 2.
+        Links.ControllerInfo Info(ControllerKind k) => k switch
+        {
+            ControllerKind.JoyCon1Left => new() { BodyColor = 0x4AC7EC, ButtonColor = 0x0F1419 },
+            ControllerKind.JoyCon1Right => new() { BodyColor = 0xFF3C28, ButtonColor = 0x0F1419 },
+            ControllerKind.JoyCon2Left => new() { BodyColor = 0x2D2E33, ButtonColor = 0xC8C8C8, GripColor = 0x1CB4DC },
+            _ => new() { BodyColor = 0x2D2E33, ButtonColor = 0xC8C8C8, GripColor = 0xF2593C },
+        };
+        InputView.JoyConPart Part(ControllerKind k, bool grip = false, bool upright = false) =>
+            new(k, new ControllerState(), DeviceCalibration.Default, Info(k), false, grip, upright);
+        foreach (var (l, r, tag) in new[] { (ControllerKind.JoyCon1Left, ControllerKind.JoyCon1Right, "jc1"), (ControllerKind.JoyCon2Left, ControllerKind.JoyCon2Right, "jc2") })
+        {
+            var cases = new (string Name, InputView.JoyConPart[] Parts)[]
+            {
+                ($"{tag}_links_quer", [Part(l)]), ($"{tag}_rechts_quer", [Part(r)]),
+                ($"{tag}_links_hochkant", [Part(l, upright: true)]), ($"{tag}_rechts_hochkant", [Part(r, upright: true)]),
+                ($"{tag}_paar", [Part(l), Part(r)]), ($"{tag}_grip", [Part(l, grip: true), Part(r, grip: true)]),
+            };
+            foreach (var (name, parts) in cases)
+            {
+                foreach (bool pressed in new[] { false, true })
+                {
+                    using var view = new InputView { Size = new Size(580, 410),
+                        ButtonsOnly = Environment.GetCommandLineArgs().Contains("--buttons-only") };
+                    var buttons = pressed ? ProButtons.A | ProButtons.Up | ProButtons.L | ProButtons.ZL
+                        | ProButtons.SLLeft | ProButtons.SRRight | ProButtons.Plus | ProButtons.C | ProButtons.GL | ProButtons.GR
+                        : ProButtons.None;
+                    var states = parts.Select(part => part with { State = new ControllerState
+                    {
+                        Buttons = buttons, LeftX = pressed ? 3500 : 2048, RightX = pressed ? 3500 : 2048,
+                    } }).ToArray();
+                    view.ShowJoyCons(states, new PadInput { Kind = l, Buttons = buttons });
+                    using var bmp = new Bitmap(580, 410);
+                    view.DrawToBitmap(bmp, new Rectangle(0, 0, 580, 410));
+                    bmp.Save(Path.Combine(folder, $"{name}{(pressed ? "_pressed" : "")}.png"), ImageFormat.Png);
+                }
+            }
+        }
+    }
+}

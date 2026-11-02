@@ -1,0 +1,24 @@
+bin/
+obj/
+out/
+installer/redist/
+*.user
+__pycache__/
+.vs/
+# Signaturschlüssel und Passwörter gehören nie ins Repository (Android: %USERPROFILE%\.skzconnect).
+*.pfx
+*.p12
+*.jks
+*.keystore
+signing.props
+# Gebaute Android-Pakete (werden ans GitHub-Release gehängt, nicht eingecheckt).
+*.apk
+*.aab
+
+# Agenten-Hinweise bleiben lokal
+AGENTS.md
+
+# Interne Arbeitsnotizen bleiben lokal
+HANDOVER.md
+docs/VERLAUF.md
+docs/UEBERGABE-SWITCH-IDENTITAET.md

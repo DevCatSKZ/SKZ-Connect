@@ -1,0 +1,915 @@
+namespace Switch2Pro.Bridge;
+
+/// <summary>Feste Texte Deutsch → Englisch.</summary>
+internal static partial class Tr
+{
+    private static readonly Dictionary<string, string> Texts = new(StringComparer.Ordinal)
+    {
+        ["Controllerbilder"] = "Controller images",
+        ["Nur Tasten"] = "Buttons only",
+        // ---------- Kodi (DevCatSKZ Repository) ----------
+        ["Kodi"] = "Kodi",
+        ["In Kodi einrichten"] = "Set up in Kodi",
+        ["Kodi herunterladen …"] = "Download Kodi …",
+        ["Das DevCatSKZ Repository liegt jetzt in Kodi. Starte Kodi (neu) und schalte es ein: Add-ons → Meine Add-ons → Add-on-Repository → DevCatSKZ Repository → Aktivieren."] = "The DevCatSKZ Repository is now in Kodi. Start (or restart) Kodi and enable it: Add-ons → My add-ons → Add-on repository → DevCatSKZ Repository → Enable.",
+        ["Download fehlgeschlagen – bitte die Internetverbindung prüfen."] = "Download failed – please check your internet connection.",
+        ["Einrichten fehlgeschlagen – der Kodi-Ordner ist nicht beschreibbar. Nutze „Repository herunterladen“."] = "Setup failed – the Kodi folder is not writable. Use “Download repository”.",
+        ["Herunterladen …"] = "Download …",
+        ["DevCatSKZ Repository in Kodi einrichten"] = "Set up the DevCatSKZ Repository in Kodi",
+        ["Kodi ist auf diesem PC installiert. Legt das Repository direkt in Kodi ab. Darüber kommen unsere Kodi-Plugins mit automatischen Updates. Danach in Kodi: Add-ons → Meine Add-ons → Add-on-Repository → DevCatSKZ Repository → Aktivieren."] = "Kodi is installed on this PC. Puts the repository straight into Kodi. It brings our Kodi plugins with automatic updates. Then in Kodi: Add-ons → My add-ons → Add-on repository → DevCatSKZ Repository → Enable.",
+        ["Kodi ist auf diesem PC nicht installiert. Mit Kodi für Windows funktionieren deine Controller auch ohne Plugin – sie erscheinen dort als Xbox-Controller."] = "Kodi is not installed on this PC. With Kodi for Windows your controllers work even without a plugin – they show up there as Xbox controllers.",
+        ["Repository herunterladen"] = "Download repository",
+        ["Speichert repository.devcatskz.zip im Download-Ordner – zum Installieren auf einem anderen Gerät über „Aus ZIP-Datei installieren“."] = "Saves repository.devcatskz.zip to your Downloads folder – to install it on another device via “Install from zip file”.",
+        ["Kodi-Plugin für LibreELEC"] = "Kodi plugin for LibreELEC",
+        ["Braucht Kodi ein Plugin?"] = "Does Kodi need a plugin?",
+        ["Nur auf anderen Geräten: Kodi für Windows braucht keins – deine Controller erscheinen dort als Xbox-Controller. Auf Raspberry Pi, LibreELEC und anderen Kodi-Geräten zeigt das Plugin verbundene Controller und Akkustand."] = "Only on other devices: Kodi for Windows doesn't need one – your controllers appear there as Xbox controllers. On Raspberry Pi, LibreELEC and other Kodi devices the plugin shows connected controllers and battery level.",
+        ["Kodi-Plugin für LibreELEC (installiert)"] = "Kodi plugin for LibreELEC (installed)",
+        ["Für Raspberry Pi und andere Geräte mit LibreELEC: SKZ Connect als Kodi-Plugin (alle Geräte). Am einfachsten über das DevCatSKZ Repository."] = "For Raspberry Pi and other devices running LibreELEC: SKZ Connect as a Kodi plugin (all devices). Easiest via the DevCatSKZ Repository.",
+        // ---------- Fenster, Reiter, Abschnitte ----------
+        ["Controller"] = "Controllers",
+        // ---------- Desktop-Modus, Testseite, Vorlagen, Diagnose ----------
+        ["Einblendung beim Verbinden"] = "Pop-up on connect",
+        ["Kurze Anzeige am Bildschirmrand mit Spieler, Controller und Akkustand."] = "Short display at the screen edge with player, controller and battery level.",
+        ["Desktop-Modus"] = "Desktop mode",
+        ["Läuft kein Spiel, steuert der Controller Windows: linker Stick = Maus, rechter Stick = Scrollen, A = Klick, B = Rechtsklick, X = Taskansicht, Y = Bildschirmtastatur, Steuerkreuz = Pfeiltasten, LB/RB = zurück/vor, Start = Enter, Back = Esc, HOME = Startmenü. Back + Start 1 Sekunde halten pausiert ihn. In Vollbildspielen und Programmen mit eigenem Profil ist er automatisch aus."] = "When no game is running, the controller controls Windows: left stick = mouse, right stick = scroll, A = click, B = right-click, X = task view, Y = on-screen keyboard, D-pad = arrow keys, LB/RB = back/forward, Start = Enter, Back = Esc, HOME = Start menu. Hold Back + Start for 1 second to pause it. It switches off automatically in full-screen games and programs with their own profile.",
+        ["Zeigergeschwindigkeit"] = "Pointer speed",
+        ["RT gedrückt halten macht den Zeiger langsam und genau."] = "Hold RT to make the pointer slow and precise.",
+        ["Desktop-Steuerung pausiert – Back + Start halten zum Fortsetzen."] = "Desktop control paused – hold Back + Start to resume.",
+        ["Desktop-Steuerung aktiv – der Controller steuert Maus und Tastatur."] = "Desktop control active – the controller controls mouse and keyboard.",
+        ["Test"] = "Test",
+        ["Trigger"] = "Triggers",
+        ["Bewegung"] = "Motion",
+        ["Rundheit"] = "Roundness",
+        ["Berichte/s"] = "reports/s",
+        ["Vibration testen"] = "Test rumble",
+        ["Kreis zurücksetzen"] = "Reset circle",
+        ["Controller testen"] = "Test controller",
+        ["Sticks einmal langsam ganz im Kreis drehen – die Linie zeigt, wie rund sie laufen. Gedrückte Tasten erscheinen unten in der Anzeige."] = "Slowly rotate each stick once all the way around – the line shows how round it moves. Pressed buttons appear at the bottom.",
+        ["🔇  Ton aus/an"] = "🔇  Mute/unmute",
+        ["⏭  Nächster Titel"] = "⏭  Next track",
+        ["⏮  Vorheriger Titel"] = "⏮  Previous track",
+        ["🎙  Mikrofon stumm (Win+Alt+K)"] = "🎙  Mute microphone (Win+Alt+K)",
+        ["🎙  Discord: Mikrofon stumm (Strg+Umschalt+M)"] = "🎙  Discord: mute microphone (Ctrl+Shift+M)",
+        ["🎧  Discord: Ton aus (Strg+Umschalt+D)"] = "🎧  Discord: deafen (Ctrl+Shift+D)",
+        ["🖥  Desktop anzeigen (Win+D)"] = "🖥  Show desktop (Win+D)",
+        ["🗂  Taskansicht (Win+Tab)"] = "🗂  Task view (Win+Tab)",
+        ["↔  Zum letzten Fenster (Alt+Tab)"] = "↔  Last window (Alt+Tab)",
+        ["Diagnose exportieren"] = "Export diagnostics",
+        ["Protokoll, Einstellungen und Systeminfos als ZIP-Datei – zum Anhängen an eine Fehlermeldung. Enthält keine Kopplungsschlüssel."] = "Log, settings and system info as a ZIP file – to attach to a bug report. Contains no pairing keys.",
+        // ---------- Desktop-Widget ----------
+        ["Desktop-Widget"] = "Desktop widget",
+        ["Kleines Kärtchen auf dem Desktop: verbundene Controller, Akku, Verbindung und Ausgabe auf einen Blick. Mit der Maus verschieben, Rechtsklick für Optionen, Doppelklick öffnet SKZ Connect."] = "Small card on the desktop: connected controllers, battery, connection and output at a glance. Drag it with the mouse, right-click for options, double-click opens SKZ Connect.",
+        ["Immer im Vordergrund"] = "Always on top",
+        ["Widget bleibt über allen Fenstern sichtbar (sonst nur auf dem Desktop)."] = "The widget stays visible above all windows (otherwise only on the desktop).",
+        ["Kompakte Ansicht"] = "Compact view",
+        ["Eine Zeile je Controller: Spieler, Name und Akku."] = "One line per controller: player, name and battery.",
+        ["Deckkraft"] = "Opacity",
+        ["nativ"] = "native",
+        ["Xbox · nativ"] = "Xbox · native",
+        ["Controller einschalten oder SYNC drücken"] = "Turn on a controller or press SYNC",
+        ["SKZ Connect öffnen"] = "Open SKZ Connect",
+        ["Position zurücksetzen"] = "Reset position",
+        ["Widget ausblenden"] = "Hide widget",
+        // ---------- Status-Kopfzeile, Ansicht ----------
+        ["Farbschema"] = "Colour scheme",
+        ["Farben für Akzente, Knöpfe, Flächen und Ränder."] = "Colours for accents, buttons, surfaces and borders.",
+        ["bereit"] = "ready",
+        ["nicht verfügbar"] = "not available",
+        ["Niedrigster Akku"] = "Lowest battery",
+        ["lädt"] = "charging",
+        ["gemischt"] = "mixed",
+        ["Original-Controller"] = "Original controllers",
+        ["versteckt"] = "hidden",
+        ["sichtbar"] = "visible",
+        ["HidHide fehlt"] = "HidHide missing",
+        ["Groß"] = "Large",
+        ["Kompakt"] = "Compact",
+        ["Einstellungen (optional)"] = "Settings (optional)",
+        ["1. Windows und Spiele sehen den Controller als …"] = "1. Windows and games see the controller as …",
+        ["2. Tasten A/B/X/Y"] = "2. A/B/X/Y buttons",
+        ["3. Vibration, Sticks, Verbinden, Gyro-Maus"] = "3. Vibration, sticks, connecting, gyro mouse",
+        ["4. Joy-Con"] = "4. Joy-Con",
+        ["4. Joy-Con und Wii"] = "4. Joy-Con and Wii",
+        ["Wii-Fernbedienung: Zeiger (Sensorleiste) steuert die Maus"] = "Wii Remote: pointer (sensor bar) moves the mouse",
+        ["Zeiger"] = "Pointer",
+        ["kein Zeiger – Sensorleiste nicht im Blick"] = "no pointer – sensor bar not in view",
+        ["MotionPlus"] = "MotionPlus",
+        ["5. Zielen, Sticks, Trigger, Turbo"] = "5. Aiming, sticks, triggers, turbo",
+        ["6. Tastenbelegung und Profile  (Taste → Gamepad, Tastatur, Maus, Gyro-Maus, Shift-Ebene)"] =
+            "6. Button mapping and profiles  (button → gamepad, keyboard, mouse, gyro mouse, shift layer)",
+        ["Xbox-360-Controller  (empfohlen – läuft mit fast allen Spielen)"] = "Xbox 360 controller  (recommended – works with almost all games)",
+        ["PlayStation DualShock 4  (mit Bewegungssteuerung/Gyro – für Steam && Emulatoren)"] =
+            "PlayStation DualShock 4  (with motion controls/gyro – for Steam && emulators)",
+        ["Xbox-Belegung  (nach Position: untere Taste = A)"] = "Xbox layout  (by position: bottom button = A)",
+        ["Nintendo-Belegung  (nach Beschriftung: A bleibt A)"] = "Nintendo layout  (by label: A stays A)",
+        ["Vibration"] = "Vibration",
+        ["Stärke:"] = "Strength:",
+        ["Stick-Totzone (alle Controller):"] = "Stick deadzone (all controllers):",
+        ["Beim Verbinden kurz vibrieren"] = "Vibrate briefly when connecting",
+        ["Meldung bei Verbinden"] = "Connection notification",
+        ["Wer meldet, wenn ein Controller verbunden oder getrennt wird."] = "Who notifies when a controller connects or disconnects.",
+        ["„SKZ Connect“ zeigt den echten Controller-Namen und schaltet die Gerätemeldungen von Windows ab."] = "\"SKZ Connect\" shows the real controller name and turns off Windows device notifications.",
+        ["SKZ Connect (empfohlen)"] = "SKZ Connect (recommended)",
+        ["SKZ Connect und Windows"] = "SKZ Connect and Windows",
+        ["Keine"] = "None",
+        ["Gekoppelte Controller per Tastendruck verbinden (ohne SYNC)"] = "Connect paired controllers with a button press (no SYNC)",
+        ["Automatisch mit Windows starten"] = "Start automatically with Windows",
+        ["Gyro für Emulatoren bereitstellen (Cemuhook/DSU, Port 26760 – wirkt nach Neustart)"] =
+            "Provide gyro for emulators (Cemuhook/DSU, port 26760 – takes effect after restart)",
+        ["Beim Start nach neuer Version suchen (GitHub)"] = "Check for a new version at startup (GitHub)",
+        ["Ohne Eingabe automatisch trennen nach:"] = "Disconnect automatically without input after:",
+        ["Gyro-Maus-Geschwindigkeit:"] = "Gyro mouse speed:",
+        ["Sprache / Language:"] = "Language / Sprache:",
+        ["Automatisch (wie Windows)"] = "Automatic (like Windows)",
+        ["nie"] = "never",
+        ["Zwei Joy-Con automatisch zu einem Controller zusammenfassen"] = "Combine two Joy-Cons into one controller automatically",
+        ["Gyro beim Paar vom:"] = "Pair gyro from:",
+        ["rechter Joy-Con (wie Switch)"] = "right Joy-Con (like Switch)",
+        ["linker Joy-Con"] = "left Joy-Con",
+        ["Joy-Con 2 als Maus, wenn er auf dem Tisch liegt"] = "Joy-Con 2 as a mouse when it stands on the table",
+        ["Mausgeschwindigkeit:"] = "Mouse speed:",
+        ["Maus: links/rechts umkehren"] = "Mouse: invert left/right",
+        ["Maus: hoch/runter umkehren"] = "Mouse: invert up/down",
+        ["Wie an der Switch: SL + SR eine Sekunde halten löst einen Joy-Con aus dem Paar. L am linken und R am rechten einzelnen Joy-Con gleichzeitig drücken verbindet sie wieder zum Paar. Die Wahl wird je Joy-Con gemerkt (auch nach dem nächsten Verbinden). Im Mausmodus: R/L = Linksklick, ZR/ZL = Rechtsklick, Stick drücken = Mittelklick, Stick hoch/runter = Scrollen."] =
+            "Like on the Switch: holding SL + SR for a second splits a Joy-Con from the pair. Pressing L on the left and R on the right single Joy-Con at the same time pairs them again. The choice is remembered per Joy-Con (also for the next connection). In mouse mode: R/L = left click, ZR/ZL = right click, press stick = middle click, stick up/down = scroll.",
+        ["Gyro als rechter Stick:"] = "Gyro as right stick:",
+        ["aus (nur per Taste „Gyro-Stick“)"] = "off (only via a “gyro stick” button)",
+        ["immer"] = "always",
+        ["beim Zielen (solange ZL / linker Trigger gedrückt)"] = "while aiming (while ZL / left trigger is held)",
+        ["hoch/runter umkehren"] = "invert up/down",
+        ["Empfindlichkeit:"] = "Sensitivity:",
+        ["Mindestausschlag:"] = "Minimum deflection:",
+        ["Stick-Kennlinie:"] = "Stick curve:",
+        ["Turbo (pro Sekunde):"] = "Turbo (per second):",
+        ["Analoge Trigger (GameCube) – Totzone:"] = "Analog triggers (GameCube) – deadzone:",
+        ["voll gedrückt ab:"] = "fully pressed at:",
+        ["Profil:"] = "Profile:",
+        ["Neu …"] = "New …",
+        ["Umbenennen …"] = "Rename …",
+        ["Löschen"] = "Delete",
+        ["Exportieren …"] = "Export …",
+        ["Importieren …"] = "Import …",
+        ["Aktiv bei Programm:"] = "Active for program:",
+        ["Programm wählen …"] = "Choose program …",
+        ["Standard"] = "Default",
+        ["Standard gilt immer, wenn kein anderes Profil passt"] = "Default applies whenever no other profile matches",
+        ["z. B. Cemu.exe, Ryujinx.exe"] = "e.g. Cemu.exe, Ryujinx.exe",
+        ["Ein eigenes Profil wird automatisch aktiv, solange eines seiner Programme im Vordergrund ist (sonst gilt „Standard“). Im Infobereich-Menü lässt sich ein Profil auch fest wählen."] =
+            "A custom profile becomes active automatically while one of its programs is in the foreground (otherwise “Default” applies). A profile can also be fixed in the tray menu.",
+        ["Controller:"] = "Controller:",
+        ["Eigene Stick-Totzone für diesen Controller:"] = "Own stick deadzone for this controller:",
+        ["Normale Belegung"] = "Normal mapping",
+        ["Shift-Ebene (gilt, solange eine Taste mit „Shift-Ebene“ gehalten wird)"] = "Shift layer (applies while a button with “shift layer” is held)",
+        ["Alles auf Standard"] = "Reset everything",
+        ["Schließen"] = "Close",
+        ["wie normale Belegung"] = "same as normal mapping",
+
+        // ---------- Belegungsziele und Vorlagen ----------
+        ["— keine Funktion —"] = "— no function —",
+        ["A (Xbox) / Kreuz (PS)"] = "A (Xbox) / Cross (PS)",
+        ["B (Xbox) / Kreis (PS)"] = "B (Xbox) / Circle (PS)",
+        ["X (Xbox) / Viereck (PS)"] = "X (Xbox) / Square (PS)",
+        ["Y (Xbox) / Dreieck (PS)"] = "Y (Xbox) / Triangle (PS)",
+        ["Ansicht (Back) / Share"] = "View (Back) / Share",
+        ["Menü (Start) / Options"] = "Menu (Start) / Options",
+        ["Xbox-Taste / PS-Taste"] = "Xbox button / PS button",
+        ["Linker Stick-Klick"] = "Left stick click",
+        ["Rechter Stick-Klick"] = "Right stick click",
+        ["Steuerkreuz hoch"] = "D-pad up",
+        ["Steuerkreuz runter"] = "D-pad down",
+        ["Steuerkreuz links"] = "D-pad left",
+        ["Steuerkreuz rechts"] = "D-pad right",
+        ["Touchpad-Klick (nur DualShock 4)"] = "Touchpad click (DualShock 4 only)",
+        ["🖱  Maus: Linksklick"] = "🖱  Mouse: left click",
+        ["🖱  Maus: Rechtsklick"] = "🖱  Mouse: right click",
+        ["🖱  Maus: Mittelklick"] = "🖱  Mouse: middle click",
+        ["🎯  Gyro-Maus (solange gehalten)"] = "🎯  Gyro mouse (while held)",
+        ["🎯  Gyro-Maus ein/aus"] = "🎯  Gyro mouse on/off",
+        ["🎯  Gyro als rechter Stick (solange gehalten)"] = "🎯  Gyro as right stick (while held)",
+        ["🎯  Gyro als rechter Stick ein/aus"] = "🎯  Gyro as right stick on/off",
+        ["⇧  Shift-Ebene (solange gehalten)"] = "⇧  Shift layer (while held)",
+        ["🔁  Turbo / Dauerfeuer …"] = "🔁  Turbo / rapid fire …",
+        ["⏯  Makro (Tastenfolge) …"] = "⏯  Macro (button sequence) …",
+        ["📷  Bildschirmfoto speichern (Win+Druck)"] = "📷  Save screenshot (Win+PrtScn)",
+        ["📷  Bildschirmausschnitt (Win+Umschalt+S)"] = "📷  Screen snip (Win+Shift+S)",
+        ["⏺  Letzte 30 Sekunden aufnehmen (Win+Alt+G)"] = "⏺  Record last 30 seconds (Win+Alt+G)",
+        ["⏺  Aufnahme starten/stoppen (Win+Alt+R)"] = "⏺  Start/stop recording (Win+Alt+R)",
+        ["🎮  Xbox Game Bar (Win+G)"] = "🎮  Xbox Game Bar (Win+G)",
+        ["🔊  Lauter"] = "🔊  Volume up",
+        ["🔉  Leiser"] = "🔉  Volume down",
+        ["⏯  Wiedergabe/Pause"] = "⏯  Play/pause",
+        ["⌨  Andere Taste / Tastenkombination aufnehmen …"] = "⌨  Record another key / key combination …",
+
+        // ---------- Tastennamen ----------
+        ["+ (Plus)"] = "+ (Plus)",
+        ["− (Minus)"] = "− (Minus)",
+        ["Aufnahme"] = "Capture",
+        ["GL (Rücktaste links)"] = "GL (left back button)",
+        ["GR (Rücktaste rechts)"] = "GR (right back button)",
+        ["Linker Stick drücken"] = "Press left stick",
+        ["Rechter Stick drücken"] = "Press right stick",
+        ["Stick drücken"] = "Press stick",
+        ["A (groß, unten)"] = "A (large, bottom)",
+        ["B (links)"] = "B (left)",
+        ["X (rechts)"] = "X (right)",
+        ["Y (oben)"] = "Y (top)",
+        ["L (ganz durchgedrückt)"] = "L (fully pressed)",
+        ["R (ganz durchgedrückt)"] = "R (fully pressed)",
+        ["untere Taste (quer)"] = "bottom button (sideways)",
+        ["rechte Taste (quer)"] = "right button (sideways)",
+        ["linke Taste (quer)"] = "left button (sideways)",
+        ["obere Taste (quer)"] = "top button (sideways)",
+        ["1 (quer) / Classic Y"] = "1 (sideways) / Classic Y",
+        ["2 (quer) / Classic B"] = "2 (sideways) / Classic B",
+        ["B (Abzug) / Classic ZR"] = "B (trigger) / Classic ZR",
+        // Sony: Tastensymbole nach Position.
+        ["Kreuz (unten)"] = "Cross (bottom)",
+        ["Kreis (rechts)"] = "Circle (right)",
+        ["Viereck (links)"] = "Square (left)",
+        ["Dreieck (oben)"] = "Triangle (top)",
+        ["Create"] = "Create",
+        ["Share"] = "Share",
+        ["Options"] = "Options",
+        ["PS-Taste"] = "PS button",
+        ["Touchpad-Klick"] = "Touchpad click",
+        ["Mikro stumm"] = "Mic mute",
+        ["Fn links (Edge)"] = "Fn left (Edge)",
+        ["Rücktaste links (Edge)"] = "Left back button (Edge)",
+        ["Rücktaste rechts (Edge)"] = "Right back button (Edge)",
+        ["L3 (Stick drücken)"] = "L3 (press stick)",
+        ["R3 (Stick drücken)"] = "R3 (press stick)",
+        // Xbox.
+        ["Ansicht/Zurück"] = "View/Back",
+        ["Menü/Start"] = "Menu/Start",
+        ["Xbox-Taste"] = "Xbox button",
+
+        // ---------- Controller-Namen ----------
+        ["Wii-Fernbedienung"] = "Wii Remote",
+        ["Sony DualShock 4"] = "Sony DualShock 4",
+        ["Sony DualSense"] = "Sony DualSense",
+        ["Xbox-Controller"] = "Xbox controller",
+        ["Xbox-Controller (Microsoft)"] = "Xbox controller (Microsoft)",
+        ["XInput (USB, Bluetooth oder Xbox-Adapter)"] = "XInput (USB, Bluetooth, or Xbox adapter)",
+
+        // ---------- Übersicht / Karten ----------
+        ["Trennen"] = "Disconnect",
+        ["Vibrieren"] = "Vibrate",
+        ["Gyro kalibrieren"] = "Calibrate gyro",
+        ["Ruhig liegen lassen …"] = "Keep it still …",
+        ["Kalibriert ✓"] = "Calibrated ✓",
+        ["Hochkant halten"] = "Hold upright",
+        ["Quer halten"] = "Hold sideways",
+        ["Joy-Con trennen"] = "Split Joy-Cons",
+        ["Zum Paar verbinden"] = "Combine into pair",
+        ["Joy-Con trennen – beide werden einzelne Controller"] = "Split Joy-Cons – both become separate controllers",
+        ["Zum Paar verbinden – sucht einen freien Joy-Con"] = "Combine into pair – looks for a free Joy-Con",
+        ["Doppelt angezeigt? Verstecken"] = "Shown twice? Hide",
+        ["amiibo lesen"] = "Read amiibo",
+        ["Ring-Con ein"] = "Ring-Con on",
+        ["Ring-Con aus"] = "Ring-Con off",
+        ["Ring-Con wird gesucht …"] = "Looking for Ring-Con …",
+        ["IR-Kamera"] = "IR camera",
+        ["Akku"] = "Battery",
+        ["Verbindung"] = "Connection",
+        ["Adresse"] = "Address",
+        ["Seriennummer"] = "Serial number",
+        ["Firmware"] = "Firmware",
+        ["Griff"] = "Grip",
+        ["Maus"] = "Mouse",
+        ["Gedrückt"] = "Pressed",
+        ["unbekannt"] = "unknown",
+        ["Charging Grip – GL/GR aktiv"] = "Charging Grip – GL/GR active",
+        ["aktiv (liegt auf dem Tisch)"] = "active (on the table)",
+        ["bereit – zum Benutzen auf den Tisch legen"] = "ready – stand it on the table to use",
+        ["Bluetooth LE"] = "Bluetooth LE",
+        ["Bluetooth"] = "Bluetooth",
+        ["Bewegungssensor: keine Daten"] = "Motion sensor: no data",
+        ["quer halten: Steuerkreuz links,\n1 und 2 rechts"] = "hold sideways: d-pad left,\n1 and 2 right",
+
+        // ---------- Tooltips ----------
+        ["Verbindung trennen. Der Controller verbindet sich beim nächsten Tastendruck wieder."] =
+            "Disconnect. The controller reconnects with the next button press.",
+        ["Controller kurz vibrieren lassen – zeigt, welcher Controller dieser Spieler ist."] =
+            "Vibrate the controller briefly – shows which controller this player is.",
+        ["Controller ruhig auf den Tisch legen und klicken: misst den Gyro-Nullpunkt neu (gegen Abdriften)."] =
+            "Put the controller still on the table and click: measures the gyro zero point again (against drift).",
+        ["Einzelnen Joy-Con quer (wie an der Switch) oder hochkant halten – wird je Joy-Con gemerkt. Hochkant gilt die Tastenbelegung von „Joy-Con-Paar“."] =
+            "Hold a single Joy-Con sideways (like on the Switch) or upright – remembered per Joy-Con. Upright uses the “Joy-Con pair” mapping.",
+        ["Versteckt den per USB angeschlossenen Controller vor Spielen (HidHide), damit sie nur den virtuellen Xbox-Controller sehen."] =
+            "Hides the USB-connected controller from games (HidHide) so they only see the virtual Xbox controller.",
+        ["amiibo mit dem NFC-Leser lesen und als Datei (.bin) speichern – z. B. für Emulatoren."] =
+            "Read an amiibo with the NFC reader and save it as a file (.bin) – e.g. for emulators.",
+        ["Ring-Con am rechten Joy-Con ein-/ausschalten: zusammendrücken = rechter Trigger, auseinanderziehen = linker Trigger. Beim Einschalten den Ring nicht berühren."] =
+            "Turn the Ring-Con on the right Joy-Con on/off: squeeze = right trigger, pull = left trigger. Don't touch the ring while turning it on.",
+        ["Live-Bild der IR-Kamera im rechten Joy-Con anzeigen."] = "Show the live image of the IR camera in the right Joy-Con.",
+        ["Links = empfindlicher (kleine Drehung, großer Ausschlag), rechts = ruhiger."] = "Left = more sensitive (small turn, large deflection), right = calmer.",
+        ["Mindestausschlag des Sticks bei Bewegung – überwindet die Totzone des Spiels."] = "Minimum stick deflection when moving – overcomes the game's deadzone.",
+        ["Mitte = linear. Rechts = feiner um die Mitte (präzises Zielen), links = schneller."] = "Middle = linear. Right = finer around the center (precise aiming), left = faster.",
+        ["So weit lässt sich ein analoger Trigger drücken, bevor er wirkt."] = "How far an analog trigger can be pressed before it takes effect.",
+        ["Ab hier gilt der Trigger als ganz gedrückt (100 = erst am Anschlag)."] = "From here the trigger counts as fully pressed (100 = only at the end).",
+
+        // ---------- Infobereich ----------
+        ["ViGEmBus-Treiber fehlt"] = "ViGEmBus driver missing",
+        ["ViGEmBus herunterladen …"] = "Download ViGEmBus …",
+        ["Verbinde …"] = "Connecting …",
+        ["Kein Controller – SYNC-Taste am Controller kurz drücken"] = "No controller – briefly press the SYNC button on the controller",
+        ["Ausgabe als"] = "Output as",
+        ["Xbox-360-Controller (empfohlen)"] = "Xbox 360 controller (recommended)",
+        ["DualShock 4 (mit Gyro für Steam/Emulatoren)"] = "DualShock 4 (with gyro for Steam/emulators)",
+        ["Tastenbelegung"] = "Button layout",
+        ["Xbox-Belegung (untere Taste = A)"] = "Xbox layout (bottom button = A)",
+        ["Switch-2-Pro-Belegung (A bleibt A)"] = "Nintendo layout (A stays A)",
+        ["Automatisch (nach Spiel/Programm)"] = "Automatic (by game/program)",
+        ["Mit Windows starten"] = "Start with Windows",
+        ["Einstellungen …"] = "Settings …",
+        ["Kurzanleitung"] = "Quick guide",
+        ["Protokoll öffnen"] = "Open log",
+        ["Beenden"] = "Exit",
+        ["SKZ Connect: warte auf Controller (SYNC drücken)"] = "SKZ Connect: waiting for a controller (press SYNC)",
+        ["SKZ Connect: ViGEmBus fehlt"] = "SKZ Connect: ViGEmBus missing",
+        ["Neue Version verfügbar"] = "New version available",
+        ["Einstellungen fehlerhaft"] = "Settings damaged",
+        ["settings.json konnte nicht gelesen werden – es gelten die Standardwerte. Die beschädigte Datei wird als „settings.json.unlesbar-…“ aufbewahrt (Klicken öffnet den Ordner)."] =
+            "settings.json could not be read – defaults apply. The damaged file is kept as “settings.json.unlesbar-…” (click to open the folder).",
+        ["Einstellungen wiederhergestellt"] = "Settings restored",
+        ["Die Einstellungen waren beschädigt und wurden aus der letzten Sicherung wiederhergestellt. Die zuletzt geänderten Werte fehlen womöglich (Klicken öffnet den Ordner)."] =
+            "The settings were damaged and have been restored from the last backup. The most recent changes may be missing (click to open the folder).",
+        ["Ohne ViGEmBus kann kein virtueller Controller erzeugt werden. Bitte das Setup erneut ausführen oder ViGEmBus installieren (Rechtsklick auf das Symbol → ViGEmBus herunterladen)."] =
+            "Without ViGEmBus no virtual controller can be created. Please run setup again or install ViGEmBus (right-click the icon → Download ViGEmBus).",
+
+        // ---------- Dialoge ----------
+        ["Tastatur-Taste festlegen"] = "Set keyboard key",
+        ["Übernehmen"] = "Apply",
+        ["Abbrechen"] = "Cancel",
+        ["Ja"] = "Yes",
+        ["Nein"] = "No",
+        ["Turbo / Dauerfeuer"] = "Turbo / rapid fire",
+        ["Tastatur-Taste aufnehmen …"] = "Record keyboard key …",
+        ["Makro (Tastenfolge)"] = "Macro (button sequence)",
+        ["Ungültig – bitte Schreibweise prüfen (siehe oben)."] = "Invalid – please check the notation (see above).",
+        ["Neues Profil"] = "New profile",
+        ["Name des Profils (z. B. der Spielname):"] = "Profile name (e.g. the game's name):",
+        ["Profil umbenennen"] = "Rename profile",
+        ["Neuer Name:"] = "New name:",
+        ["Ein Profil mit diesem Namen gibt es schon."] = "A profile with this name already exists.",
+        ["Die Datei enthält kein gültiges Controller-Profil."] = "The file does not contain a valid controller profile.",
+        ["Alle Einstellungen und Tastenbelegungen auf Standard zurücksetzen?"] = "Reset all settings and button mappings to default?",
+        ["Suche …"] = "Searching …",
+        ["Kein Bluetooth-Adapter gefunden."] = "No Bluetooth adapter found.",
+        ["IR-Kamera (Joy-Con R)"] = "IR camera (Joy-Con R)",
+        ["Auflösung:"] = "Resolution:",
+        ["40 × 30 (schnell)"] = "40 × 30 (fast)",
+        ["320 × 240 (langsam)"] = "320 × 240 (slow)",
+        ["Kamera startet …"] = "Camera starting …",
+        ["läuft – Joy-Con auf eine Lichtquelle oder die Hand richten"] = "running – point the Joy-Con at a light source or your hand",
+        ["Kamera startet nicht (Details im Protokoll)"] = "Camera does not start (details in the log)",
+        ["Ring-Con"] = "Ring-Con",
+        ["Kein Ring-Con gefunden. Den rechten Joy-Con (Switch 1) fest in den Ring-Con schieben und erneut versuchen."] =
+            "No Ring-Con found. Slide the right Joy-Con (Switch 1) firmly into the Ring-Con and try again.",
+        ["Kein amiibo erkannt. Bitte das amiibo flach an den NFC-Leser halten (Joy-Con: auf den rechten Stick, Pro Controller: auf das NFC-Logo) und erneut versuchen."] =
+            "No amiibo detected. Hold the amiibo flat against the NFC reader (Joy-Con: on the right stick, Pro Controller: on the NFC logo) and try again.",
+        ["NFC-Leser wird eingeschaltet …"] = "Turning on the NFC reader …",
+        ["amiibo an den Leser halten (rechter Stick des Joy-Con bzw. NFC-Logo des Pro Controllers) …"] =
+            "Hold the amiibo to the reader (right stick of the Joy-Con or NFC logo of the Pro Controller) …",
+        ["amiibo speichern"] = "Save amiibo",
+        ["Doppelte Controller verhindern"] = "Prevent duplicate controllers",
+        ["Dafür wird das kostenlose Programm HidHide gebraucht (von den Machern von ViGEmBus).\n\nJetzt die Download-Seite öffnen? Nach der Installation hier erneut klicken."] =
+            "This needs the free program HidHide (by the makers of ViGEmBus).\n\nOpen the download page now? Click here again after installing it.",
+        ["HidHide konnte nicht eingerichtet werden (abgebrochen oder fehlgeschlagen). Details im Protokoll."] =
+            "HidHide could not be set up (cancelled or failed). Details in the log.",
+        ["Der Controller hat sich bewegt oder keine Bewegungsdaten geliefert.\nBitte flach auf den Tisch legen, nicht berühren und erneut versuchen."] =
+            "The controller moved or did not deliver motion data.\nPlease put it flat on the table, don't touch it and try again.",
+        ["Spiel oder Programm wählen"] = "Choose game or program",
+        ["Profil exportieren"] = "Export profile",
+        ["Profil importieren"] = "Import profile",
+        // ---------- Kurzanleitung (WelcomeForm, je Absatz ein Schlüssel) ----------
+        ["SKZ Connect – Willkommen"] = "SKZ Connect – Welcome",
+        ["So verbindest du deine Controller:"] = "How to connect your controllers:",
+        ["Switch 2 (Pro Controller, Joy-Con 2, GameCube):\n" +
+         "   Kurz die kleine SYNC-Taste drücken – nach ein paar Sekunden vibriert der Controller.\n" +
+         "   Danach reicht ein Tastendruck zum Verbinden. Pro Controller und GameCube gehen auch per USB-Kabel.\n" +
+         "   Wichtig: NICHT über „Bluetooth → Gerät hinzufügen“ koppeln – das stört die Verbindung."] =
+            "Switch 2 (Pro Controller, Joy-Con 2, GameCube):\n" +
+            "   Briefly press the small SYNC button – after a few seconds the controller vibrates.\n" +
+            "   Afterwards a button press is enough to connect. Pro Controller and GameCube also work via USB cable.\n" +
+            "   Important: do NOT pair via “Bluetooth → Add device” – that disturbs the connection.",
+        ["Switch 1 (Pro Controller, Joy-Con, NES/SNES/N64/Mega Drive), Wii-Fernbedienung, Wii U Pro Controller:\n" +
+         "   SYNC-Taste drücken – SKZ Connect koppelt den Controller selbst (kein Umweg über die Windows-Einstellungen).\n" +
+         "   Danach verbindet er sich per Tastendruck. Gezielt suchen: Rechtsklick auf das Symbol → „Controller koppeln …“."] =
+            "Switch 1 (Pro Controller, Joy-Con, NES/SNES/N64/Mega Drive), Wii Remote, Wii U Pro Controller:\n" +
+            "   Press the SYNC button – SKZ Connect pairs the controller itself (no detour via the Windows settings).\n" +
+            "   Afterwards it connects with a button press. To search on purpose: right-click the icon → “Pair controller …”.",
+        ["Windows, Steam und Spiele sehen jeden Controller als Xbox-Controller.\n" +
+         "Das Programm läuft unten rechts im Infobereich – ein Klick öffnet die Übersicht."] =
+            "Windows, Steam and games see every controller as an Xbox controller.\n" +
+            "The program runs in the tray at the bottom right – a click opens the overview.",
+        ["Verstanden"] = "Got it",
+        ["Einstellungen öffnen"] = "Open settings",
+        ["Willkommen"] = "Welcome",
+
+        // ---------- Neues Hauptfenster (Navigation, Seiten, Zeilen) ----------
+        ["Allgemein"] = "General",
+        ["Sticks & Vibration"] = "Sticks & vibration",
+        ["Gyro & Maus"] = "Gyro & mouse",
+        ["Joy-Con & Wii"] = "Joy-Con & Wii",
+        ["Ein"] = "On",
+        ["Aus"] = "Off",
+        ["Verbundene Controller mit Live-Anzeige. Über „Einstellungen“ an einem Controller passt du genau diesen an."] =
+            "Connected controllers with live view. Use “Settings” on a controller to adjust exactly that one.",
+        ["Jede Taste kann ein Gamepad-Knopf, eine Tastaturtaste, ein Mausklick, Turbo oder ein Makro sein. " +
+         "Tipp: Drückst du eine Taste am Controller, wird ihre Zeile hervorgehoben."] =
+            "Every button can be a gamepad button, a keyboard key, a mouse click, turbo or a macro. " +
+            "Tip: press a button on the controller to highlight its row.",
+        ["Profil"] = "Profile",
+        ["Neu"] = "New",
+        ["Umbenennen, löschen, exportieren, importieren"] = "Rename, delete, export, import",
+        ["Ein eigenes Profil gilt automatisch, solange eines seiner Programme im Vordergrund ist – sonst „Standard“."] =
+            "A custom profile applies automatically while one of its programs is in the foreground – otherwise “Default”.",
+        ["Aktiv bei Programm"] = "Active for program",
+        ["Programmdateien, bei denen dieses Profil gilt (mit Komma trennen)."] = "Program files this profile applies to (separate with commas).",
+        ["Standard gilt für alle Programme"] = "Default applies to all programs",
+        ["Wählen …"] = "Choose …",
+        ["Bearbeiten"] = "Edit",
+        ["Jeder Controller hat seine eigene Belegung."] = "Every controller has its own mapping.",
+        ["Ebene"] = "Layer",
+        ["Normal"] = "Normal",
+        ["Shift-Ebene"] = "Shift layer",
+        ["Die Shift-Ebene gilt, solange eine Taste mit „Shift-Ebene“ gehalten wird."] = "The shift layer applies while a button set to “Shift layer” is held.",
+        ["Tasten"] = "Buttons",
+        ["Standardwerte für alle Controller. Eigene Werte für einzelne Controller stellst du unten oder in der Übersicht ein."] =
+            "Default values for all controllers. Set your own values for individual controllers below or in the overview.",
+        ["Sticks"] = "Sticks",
+        ["Totzone"] = "Dead zone",
+        ["So weit lässt sich ein Stick bewegen, bevor er wirkt (gegen Abdriften)."] = "How far a stick can move before it reacts (against drift).",
+        ["Kennlinie"] = "Response curve",
+        ["„linear“ = gleichmäßig. Höher = feiner um die Mitte (präzises Zielen), niedriger = schneller."] =
+            "“linear” = even. Higher = finer around the center (precise aiming), lower = faster.",
+        ["Analoge Trigger (GameCube)"] = "Analog triggers (GameCube)",
+        ["So weit lässt sich ein Trigger drücken, bevor er wirkt."] = "How far a trigger can be pressed before it reacts.",
+        ["Voll gedrückt ab"] = "Fully pressed at",
+        ["Ab hier gilt der Trigger als ganz gedrückt (100 % = erst am Anschlag)."] = "From here the trigger counts as fully pressed (100 % = only at the stop).",
+        ["Spiele dürfen den Controller vibrieren lassen."] = "Games may make the controller vibrate.",
+        ["Stärke"] = "Strength",
+        ["Turbo-Geschwindigkeit"] = "Turbo speed",
+        ["Wie oft pro Sekunde Tasten mit „Turbo“ auslösen."] = "How often per second buttons set to “Turbo” fire.",
+        ["Eigene Werte je Controller"] = "Own values per controller",
+        ["Werte nur für diesen Controller – ohne eigenen Wert gilt der allgemeine."] = "Values for this controller only – without an own value the general one applies.",
+        ["Bewegungssteuerung: Zielen per Gyro und den Controller als Maus nutzen."] = "Motion controls: aim with the gyro and use the controller as a mouse.",
+        ["Gyro als rechter Stick"] = "Gyro as right stick",
+        ["Modus"] = "Mode",
+        ["Zum Zielen in Spielen ohne eigene Gyro-Steuerung. „Gyro-Stick“ kann auch einer Taste zugewiesen werden."] =
+            "For aiming in games without their own gyro controls. “Gyro stick” can also be assigned to a button.",
+        ["Aus (nur per Taste „Gyro-Stick“)"] = "Off (only via a “gyro stick” button)",
+        ["Immer"] = "Always",
+        ["Beim Zielen (solange ZL / LT gedrückt)"] = "While aiming (while ZL / LT is held)",
+        ["Empfindlichkeit"] = "Sensitivity",
+        ["Drehgeschwindigkeit für vollen Stick-Ausschlag – kleiner = empfindlicher."] = "Turn speed for full stick deflection – lower = more sensitive.",
+        ["Mindestausschlag"] = "Minimum deflection",
+        ["Überwindet die Stick-Totzone des Spiels bei kleinen Bewegungen."] = "Overcomes the game's stick dead zone for small movements.",
+        ["Hoch/runter umkehren"] = "Invert up/down",
+        ["Links/rechts umkehren"] = "Invert left/right",
+        ["Gyro-Maus"] = "Gyro mouse",
+        ["Geschwindigkeit"] = "Speed",
+        ["Mauszeiger per Bewegung – über eine Taste mit „Gyro-Maus“ (Tastenbelegung)."] = "Mouse pointer via motion – through a button set to “Gyro mouse” (button mapping).",
+        ["Mausrichtung (Gyro-Maus und Joy-Con-Maus)"] = "Mouse direction (gyro mouse and Joy-Con mouse)",
+        ["Gyro-Funktionen einer Taste zuweisen"] = "Assign gyro functions to a button",
+        ["Gyro-Maus oder Gyro-Stick ein/aus bzw. solange gehalten"] = "Gyro mouse or gyro stick on/off or while held",
+        ["Joy-Con als Paar oder einzeln, Joy-Con 2 als Maus und Wii-Controller."] = "Joy-Con as a pair or single, Joy-Con 2 as a mouse and Wii controllers.",
+        ["Zu einem Controller zusammenfassen"] = "Combine into one controller",
+        ["Ein linker und ein rechter Joy-Con werden automatisch ein Paar."] = "A left and a right Joy-Con automatically become a pair.",
+        ["Gyro beim Paar vom"] = "Gyro of a pair from",
+        ["Rechter Joy-Con (wie Switch)"] = "Right Joy-Con (like Switch)",
+        ["Linker Joy-Con"] = "Left Joy-Con",
+        ["Paar lösen oder verbinden"] = "Split or join a pair",
+        ["Einen Joy-Con quer halten und SL oder SR drücken löst ihn aus dem Paar. L am linken und R am rechten Joy-Con gleichzeitig drücken verbindet sie wieder. Die Wahl wird je Joy-Con gemerkt."] =
+            "Holding a Joy-Con sideways and pressing SL or SR splits it from the pair. Pressing L on the left and R on the right Joy-Con at the same time joins them again. The choice is remembered per Joy-Con.",
+        ["Joy-Con 2 als Maus"] = "Joy-Con 2 as a mouse",
+        ["Als Maus, wenn er auf dem Tisch liegt"] = "As a mouse when lying on the table",
+        ["Joy-Con 2 auf die Seite legen und wie eine Maus schieben."] = "Lay Joy-Con 2 on its side and slide it like a mouse.",
+        ["Mausgeschwindigkeit"] = "Mouse speed",
+        ["Tasten im Mausmodus"] = "Buttons in mouse mode",
+        ["R/L = Linksklick, ZR/ZL = Rechtsklick, Stick drücken = Mittelklick, Stick hoch/runter = Scrollen."] =
+            "R/L = left click, ZR/ZL = right click, press stick = middle click, stick up/down = scroll.",
+        ["Zeiger steuert die Maus"] = "Pointer controls the mouse",
+        ["Wii-Fernbedienung auf die Sensorleiste richten, um den Mauszeiger zu bewegen."] = "Point the Wii Remote at the sensor bar to move the mouse pointer.",
+        ["Wie Spiele die Controller sehen, Verbindung, Darstellung und Programm."] = "How games see the controllers, connection, appearance and program.",
+        ["Ausgabe"] = "Output",
+        ["Controller erscheint als"] = "Controller appears as",
+        ["Xbox 360 läuft mit fast allen Spielen. DualShock 4 bietet Bewegungssteuerung (Steam, Emulatoren)."] =
+            "Xbox 360 works with almost all games. DualShock 4 offers motion controls (Steam, emulators).",
+        ["Xbox 360 läuft mit fast allen Spielen und Steam. DualShock 4 bietet zusätzlich Bewegungssteuerung (Steam, Emulatoren). Gilt für alle Controller ohne eigene Einstellung (Karte → Einstellungen → Tasten)."] =
+            "Xbox 360 works with almost all games and Steam. DualShock 4 adds motion controls (Steam, emulators). Applies to all controllers without their own setting (card → Settings → Buttons).",
+        ["Original-Controller verstecken"] = "Hide original controllers",
+        ["Controller verbinden"] = "Connect controllers",
+        ["SYNC-Taste am Controller drücken – SKZ Connect findet und koppelt ihn selbst. Danach reicht künftig ein Tastendruck."] =
+            "Press the SYNC button on the controller – SKZ Connect finds and pairs it by itself. After that, a button press is enough.",
+        ["So kommt der Controller in den Kopplungsmodus"] = "How to put the controller into pairing mode",
+        ["Switch 2: Pro Controller, Joy-Con 2, GameCube"] = "Switch 2: Pro Controller, Joy-Con 2, GameCube",
+        ["Kurz die kleine SYNC-Taste drücken."] = "Briefly press the small SYNC button.",
+        ["Switch 1: Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive"] = "Switch 1: Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive",
+        ["SYNC-Taste drücken, bis die Lichter laufen."] = "Press the SYNC button until the lights run.",
+        ["Batteriefach öffnen und die rote SYNC-Taste drücken."] = "Open the battery compartment and press the red SYNC button.",
+        ["Die SYNC-Taste auf der Unterseite drücken."] = "Press the SYNC button on the bottom.",
+        ["PlayStation: DualShock 4, DualSense"] = "PlayStation: DualShock 4, DualSense",
+        ["PS + Teilen bzw. Create halten, bis die Lichtleiste schnell blinkt."] =
+            "Hold PS + Share/Create until the light bar blinks quickly.",
+        ["Xbox über Bluetooth: One S, Series X|S, Elite"] = "Xbox via Bluetooth: One S, Series X|S, Elite",
+        ["Kopplungstaste oben halten, bis die Xbox-Taste blinkt."] = "Hold the pairing button on top until the Xbox button blinks.",
+        ["Status"] = "Status",
+        ["Suche läuft …"] = "Searching …",
+        ["Suche läuft – jetzt SYNC drücken …"] = "Searching – press SYNC now …",
+        ["Weitere Controller? Einfach SYNC drücken."] = "More controllers? Just press SYNC.",
+        ["Wartet auf einen Controller im Kopplungsmodus."] = "Waiting for a controller in pairing mode.",
+        ["Suche beendet"] = "Search finished",
+        ["Die Controller stehen in der Übersicht und verbinden sich künftig per Tastendruck."] =
+            "The controllers are listed in the overview and will connect with a button press from now on.",
+        ["Kein Controller im Kopplungsmodus gefunden. SYNC-Taste drücken und „Erneut suchen“ klicken."] =
+            "No controller in pairing mode found. Press SYNC and click “Search again”.",
+        ["Verbunden"] = "Connected",
+        ["Erneut suchen"] = "Search again",
+        ["Fertig"] = "Done",
+        ["Im Spiel"] = "In game",
+        ["Dreht …"] = "Turning …",
+        ["Testdrehung (360°)"] = "Test turn (360°)",
+        ["Testdrehung"] = "Test turn",
+        ["aus"] = "off",
+        ["Gyro-Beschleunigung"] = "Gyro acceleration",
+        ["Bei schneller Drehung"] = "On fast turns",
+        ["Langsame Bewegungen bleiben fein, schnelle drehen weiter (wie JoyShockMapper). Voll ab 120 °/s, unter 20 °/s normal. Gilt für Gyro-Stick und Gyro-Maus."] =
+            "Slow movements stay precise, fast ones turn further (like JoyShockMapper). Full at 120 °/s, normal below 20 °/s. Applies to gyro stick and gyro mouse.",
+        ["Flick-Stick (Spiele mit Maussteuerung)"] = "Flick stick (games with mouse control)",
+        ["Flick-Stick"] = "Flick stick",
+        ["Rechten Stick in eine Richtung schieben = Kamera dreht sofort dorthin; am Rand drehen = Kamera dreht mit. Zielen dann per Gyro. Der rechte Stick geht nicht mehr ans Spiel."] =
+            "Push the right stick in a direction = the camera turns there immediately; rotate it along the edge = the camera follows. Aim with the gyro. The right stick is no longer sent to the game.",
+        ["Mausbewegung je Umdrehung"] = "Mouse movement per turn",
+        ["Je Spiel einmal einstellen: „Testdrehung“ klicken, ins Spiel wechseln – nach 3 s dreht die Kamera einmal. Genau eine volle Drehung = richtig."] =
+            "Set once per game: click “Test turn”, switch to the game – after 3 s the camera turns once. Exactly one full turn = correct.",
+        ["Flick-Dauer"] = "Flick duration",
+        ["So lange dauert die Drehung beim Flick (0 = sofort)."] = "How long the turn of a flick takes (0 = instant).",
+        ["Gyro-Maus oder Gyro-Stick ein/aus bzw. solange gehalten, „Gyro anhalten“ (Ratchet: Controller zurückführen, ohne dass sich das Ziel bewegt)"] =
+            "Gyro mouse or gyro stick on/off or while held, “Pause gyro” (ratchet: bring the controller back without moving the aim)",
+        ["✋  Gyro anhalten (solange gehalten, „Ratchet“)"] = "✋  Pause gyro (while held, “ratchet”)",
+        ["Spieler-LED und Lichtleiste vom Spiel"] = "Player LED and light bar from the game",
+        ["Die Spieler-LEDs zeigen den Xbox-Platz, den Windows vergibt. Bei DualShock 4 steuert die Lichtleiste des Spiels die HOME-LED (Switch 1 Pro Controller, rechter Joy-Con)."] =
+            "The player LEDs show the Xbox slot assigned by Windows. With DualShock 4, the game's light bar drives the HOME LED (Switch 1 Pro Controller, right Joy-Con).",
+        ["HidHide installieren …"] = "Install HidHide …",
+        ["Empfohlen: Steam und viele Spiele kennen Switch-1-, NSO- und USB-Controller selbst und sähen sie sonst doppelt. Läuft nach der Installation ohne Rückfrage (sonst fragt Windows nach Adminrechten)."] =
+            "Recommended: Steam and many games support Switch 1, NSO and USB controllers themselves and would otherwise see them twice. Works without prompts once installed (otherwise Windows asks for administrator rights).",
+        ["Steam und viele Spiele sehen Switch-1-, NSO- und USB-Controller sonst doppelt. Dafür wird das kostenlose HidHide gebraucht (bei der SKZ-Connect-Installation dabei, hier nachträglich)."] =
+            "Otherwise Steam and many games see Switch 1, NSO and USB controllers twice. This needs the free HidHide (included in the SKZ Connect setup, install it here afterwards).",
+        ["Erscheint als"] = "Appears as",
+        ["Wie allgemein"] = "As in General",
+        ["Nur für diesen Controller. Xbox 360 läuft überall; DualShock 4 bringt zusätzlich Gyro nach Steam und in Emulatoren. „Wie allgemein“ folgt der Seite „Allgemein“."] =
+            "Only for this controller. Xbox 360 works everywhere; DualShock 4 adds gyro in Steam and emulators. “As in General” follows the “General” page.",
+        ["Der echte Xbox-Controller – Spiele sehen ihn von Windows aus direkt. Belegungen hier wirken auf Sonderaktionen (Tastatur, Makros, Gyro), nicht auf den Controller selbst."] =
+            "The real Xbox controller – Windows already shows it to games directly. Mappings here apply to special actions (keyboard, macros, gyro), not to the controller itself.",
+        ["Steam und manche Spiele sehen diesen Controller sonst doppelt. Abhilfe: HidHide installieren (Seite „Allgemein“ → „Original-Controller verstecken“)."] =
+            "Otherwise Steam and some games see this controller twice. Fix: install HidHide (“General” page → “Hide original controllers”).",
+        ["Original-Controller vor Spielen versteckt. Steam bitte einmal neu starten – danach sieht es nur noch den virtuellen Controller."] =
+            "Original controllers hidden from games. Please restart Steam once – after that it only sees the virtual controller.",
+        ["Original-Controller vor Spielen versteckt – Steam und Spiele sehen nur noch den virtuellen Controller."] =
+            "Original controllers hidden from games – Steam and games now only see the virtual controller.",
+        ["Original-Controller nicht versteckt (Abfrage abgebrochen). Nachholen: Controller → Einstellungen → Extras → „Doppelt angezeigt?“."] =
+            "Original controllers not hidden (prompt cancelled). To do it later: controller → Settings → Extras → “Shown twice?”.",
+        ["Original-Controller nicht versteckt (Fehler, Details im Protokoll). Nachholen: Controller → Einstellungen → Extras → „Doppelt angezeigt?“."] =
+            "Original controllers not hidden (error, details in the log). To do it later: controller → Settings → Extras → “Shown twice?”.",
+        ["Eine ältere SKZ-Connect-Version hat das eigene virtuelle DualShock 4 vor Spielen versteckt. Freigeben hat nicht geklappt – bitte im HidHide Configuration Client den Haken beim virtuellen DualShock 4 entfernen."] =
+            "An older SKZ Connect version hid its own virtual DualShock 4 from games. Unhiding it failed – please untick the virtual DualShock 4 in the HidHide Configuration Client.",
+        ["Tastenanordnung A/B/X/Y"] = "A/B/X/Y layout",
+        ["Xbox: nach Position (untere Taste = A). Nintendo: nach Beschriftung (A bleibt A)."] = "Xbox: by position (bottom button = A). Nintendo: by label (A stays A).",
+        ["Verbinden"] = "Connecting",
+        ["Per Tastendruck verbinden"] = "Connect with a button press",
+        ["Gekoppelte Controller verbinden sich ohne SYNC-Taste."] = "Paired controllers connect without the SYNC button.",
+        ["Ohne Eingabe trennen nach"] = "Disconnect when idle after",
+        ["Spart Akku, wenn ein Controller liegen bleibt."] = "Saves battery when a controller is left lying around.",
+        ["SKZ Connect startet unsichtbar im Infobereich."] = "SKZ Connect starts hidden in the notification area.",
+        ["Darstellung und Sprache"] = "Appearance and language",
+        ["Farbmodus"] = "Color mode",
+        ["Mica-Effekt"] = "Mica effect",
+        ["Durchscheinende Titelleiste (ab Windows 11)."] = "Translucent title bar (Windows 11 and later).",
+        ["Erweitert"] = "Advanced",
+        ["Gyro für Emulatoren (DSU)"] = "Gyro for emulators (DSU)",
+        ["Cemuhook-Server auf Port 26760 – wirkt nach einem Neustart von SKZ Connect."] = "Cemuhook server on port 26760 – takes effect after restarting SKZ Connect.",
+        ["Nach Updates suchen"] = "Check for updates",
+        ["Beim Start auf GitHub nach einer neuen Version suchen."] = "Look for a new version on GitHub at startup.",
+        ["Tastenbelegungen und Werte zurücksetzen. Gekoppelte Controller bleiben erhalten."] = "Reset button mappings and values. Paired controllers are kept.",
+        ["Zurücksetzen"] = "Reset",
+
+        // ---------- Controller-Karte ----------
+        ["Einstellungen"] = "Settings",
+        ["Tastenbelegung und Einstellungen nur für diesen Controller"] = "Button mapping and settings for this controller only",
+        ["Feineinstellung"] = "Fine-tuning",
+        ["Gyro"] = "Gyro",
+        ["Extras"] = "Extras",
+        ["Belegung für alle Spiele (Standard) oder ein eigenes Profil."] = "Mapping for all games (default) or a custom profile.",
+        ["Profile"] = "Profiles",
+        ["Profile anlegen, umbenennen, exportieren …"] = "Create, rename, export profiles …",
+        ["Drück eine Taste am Controller – ihre Zeile leuchtet auf. ⌨ weist eine Tastaturtaste zu, ↺ setzt zurück."] =
+            "Press a button on the controller – its row lights up. ⌨ assigns a keyboard key, ↺ resets.",
+        ["Tastatur-Taste zuweisen: klicken und die gewünschte Taste oder Kombination drücken."] = "Assign a keyboard key: click and press the key or combination you want.",
+        ["Zurück auf die Standardbelegung"] = "Back to the default mapping",
+        ["Ohne eigenen Wert gilt der allgemeine Wert der Seite „Sticks & Vibration“."] = "Without an own value, the general value from “Sticks & vibration” applies.",
+        ["Stick-Totzone"] = "Stick dead zone",
+        ["Stick-Kennlinie"] = "Stick response curve",
+        ["Trigger-Totzone"] = "Trigger dead zone",
+        ["Trigger voll gedrückt ab"] = "Trigger fully pressed at",
+        ["Vibrationsstärke"] = "Vibration strength",
+        ["Gyro-Maus-Geschwindigkeit"] = "Gyro mouse speed",
+        ["Eigenen Wert entfernen – es gilt wieder der allgemeine Wert"] = "Remove own value – the general value applies again",
+        ["Kalibrieren"] = "Calibrate",
+        ["Controller ruhig auf den Tisch legen und klicken: misst den Nullpunkt neu (gegen Abdriften)."] =
+            "Put the controller still on the table and click: measures the zero point again (against drift).",
+        ["Gyro als rechter Stick und Mausrichtung"] = "Gyro as right stick and mouse direction",
+        ["Gilt für alle Controller"] = "Applies to all controllers",
+        ["Paar"] = "Pair",
+        ["Joy-Con quer halten und SL oder SR drücken löst das Paar, L + R gleichzeitig verbindet es."] =
+            "Holding a Joy-Con sideways and pressing SL or SR splits the pair, L + R at the same time joins it.",
+        ["Haltung"] = "Orientation",
+        ["Quer"] = "Sideways",
+        ["Hochkant"] = "Upright",
+        ["Quer wie an der Switch oder hochkant – hochkant gilt die Belegung von „Joy-Con-Paar“."] =
+            "Sideways like on the Switch or upright – upright uses the “Joy-Con pair” mapping.",
+        ["Mausmodus, Geschwindigkeit und Tasten"] = "Mouse mode, speed and buttons",
+        ["Lesen …"] = "Read …",
+        ["Einschalten"] = "Turn on",
+        ["Ausschalten"] = "Turn off",
+        ["Wird gesucht …"] = "Searching …",
+        ["Öffnen"] = "Open",
+        ["Verstecken"] = "Hide",
+        ["amiibo an den NFC-Leser halten und als Datei (.bin) speichern – z. B. für Emulatoren."] =
+            "Hold an amiibo to the NFC reader and save it as a file (.bin) – e.g. for emulators.",
+        ["Zusammendrücken = rechter Trigger, auseinanderziehen = linker Trigger. Beim Einschalten nicht berühren."] =
+            "Squeeze = right trigger, pull apart = left trigger. Don't touch it while turning on.",
+        ["Live-Bild der Infrarotkamera im rechten Joy-Con."] = "Live image of the infrared camera in the right Joy-Con.",
+        ["Doppelt angezeigt?"] = "Shown twice?",
+        ["Versteckt den Original-Controller vor Steam und Spielen (HidHide) – sie sehen dann nur den virtuellen Controller."] =
+            "Hides the original controller from Steam and games (HidHide) – they then only see the virtual controller.",
+        ["bereit (auf den Tisch legen)"] = "ready (put it on the table)",
+        ["amiibo-Abbild (*.bin)|*.bin"] = "amiibo image (*.bin)|*.bin",
+        ["Controller-Profil (*.ncprofile.json)|*.ncprofile.json|JSON (*.json)|*.json"] = "Controller profile (*.ncprofile.json)|*.ncprofile.json|JSON (*.json)|*.json",
+        ["Programme (*.exe)|*.exe"] = "Programs (*.exe)|*.exe",
+        ["Kein Controller verbunden\n\n" +
+         "Switch-2-Controller: kurz die SYNC-Taste drücken – danach reicht ein beliebiger Tastendruck.\n" +
+         "Switch-1-, NSO- und Wii-Controller: SYNC-Taste drücken – SKZ Connect koppelt sie selbst.\n" +
+         "Oder hier gezielt suchen und koppeln:"] =
+            "No controller connected\n\n" +
+            "Switch 2 controllers: briefly press the SYNC button – afterwards any button press is enough.\n" +
+            "Switch 1, NSO and Wii controllers: press the SYNC button – SKZ Connect pairs them itself.\n" +
+            "Or search and pair right here:",
+        ["Controller suchen …"] = "Search for controllers …",
+        ["Kein Controller verbunden"] = "No controller connected",
+        ["Switch-1-, NSO- und Wii-Controller suchen und koppeln (SYNC-Taste drücken)."] =
+            "Search and pair Switch 1, NSO and Wii controllers (press the SYNC button).",
+        ["Neue Controller automatisch koppeln"] = "Pair new controllers automatically",
+        ["Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive, Wii und PlayStation: einfach SYNC " +
+         "drücken – kein Umweg über die Windows-Bluetooth-Einstellungen. Gesucht wird nur, solange niemand spielt."] =
+            "Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive, Wii and PlayStation: just press SYNC – no detour via the " +
+            "Windows Bluetooth settings. Searches only while nobody is playing.",
+        ["Gezielt suchen"] = "Search on purpose",
+        ["Sucht eine Minute lang nach Controllern im Kopplungsmodus."] = "Searches for controllers in pairing mode for one minute.",
+        ["Controller koppeln …"] = "Pair controller …",
+        ["Controller koppeln"] = "Pair controller",
+        ["Linken Joy-Con umbenennen …"] = "Rename left Joy-Con …",
+        ["Rechten Joy-Con umbenennen …"] = "Rename right Joy-Con …",
+        ["Controller umbenennen"] = "Rename controller",
+        ["Spielerplatz"] = "Player slot",
+        ["SKZ Connect aktualisieren"] = "Update SKZ Connect",
+        ["HidHide aktualisieren"] = "Update HidHide",
+        ["HidHide-Update verfügbar"] = "HidHide update available",
+        ["HidHide aktuell halten"] = "Keep HidHide up to date",
+        ["Beim Start nach einer neuen HidHide-Version suchen. Installiert wird nur nach Rückfrage (geprüfter Download vom Hersteller, Neustart nötig)."] =
+            "Check for a new HidHide version at startup. It is only installed after you confirm (verified download from the vendor, restart required).",
+        ["Lizenzen Dritter"] = "Third-party licences",
+        ["Open-Source-Software und übernommener Code in SKZ Connect – mit Lizenzen und Copyright-Vermerken."] =
+            "Open-source software and adapted code in SKZ Connect – with licences and copyright notices.",
+        ["Der Download hat nicht geklappt oder die Datei war fehlerhaft. Die Release-Seite im Browser öffnen?"] =
+            "The download failed or the file was damaged. Open the release page in the browser?",
+        ["Alle Controller trennen"] = "Disconnect all controllers",
+        // Stick-Kalibrierung
+        ["Sticks kalibrieren"] = "Calibrate sticks",
+        ["Kalibrieren …"] = "Calibrate …",
+        ["Gegen Drift oder zu kleinen Ausschlag: Mitte und Rand neu messen. Wird nur in SKZ Connect gespeichert, der Controller bleibt unverändert."] =
+            "Against drift or too little range: measure centre and edge again. Stored only in SKZ Connect, the controller stays unchanged.",
+        ["Linker Stick"] = "Left stick",
+        ["Rechter Stick"] = "Right stick",
+        ["Stick"] = "Stick",
+        ["L-Stick"] = "L Stick",
+        ["R-Stick"] = "R Stick",
+        ["Stick (linker Joy-Con)"] = "Stick (left Joy-Con)",
+        ["Stick (rechter Joy-Con)"] = "Stick (right Joy-Con)",
+        ["Neu messen"] = "Measure again",
+        ["Werkswerte"] = "Factory values",
+        ["Der Punkt zeigt, wo der Stick gerade steht. Steht er losgelassen nicht in der Mitte oder erreicht er den Kreis nicht, auf „Neu messen“ klicken."] =
+            "The dot shows where the stick is. If it is not centred when released or does not reach the circle, click “Measure again”.",
+        ["Gilt gerade: eigene Kalibrierung."] = "Currently used: own calibration.",
+        ["Gilt gerade: Werkswerte des Controllers."] = "Currently used: the controller's factory values.",
+        ["1/2 – Stick loslassen und den Controller ruhig halten …"] = "1/2 – Release the stick and hold the controller still …",
+        ["2/2 – Stick bis zum Anschlag drücken und langsam ein- bis zweimal im Kreis drehen."] =
+            "2/2 – Push the stick all the way and slowly rotate it once or twice.",
+        ["Fertig. „Übernehmen“ speichert die neue Kalibrierung für diesen Controller."] = "Done. “Apply” saves the new calibration for this controller.",
+        ["Der Stick hat den Rand nicht erreicht. Bitte bis zum Anschlag drücken und erneut messen."] =
+            "The stick did not reach the edge. Please push it all the way and measure again.",
+        ["Übernommen ✓ – gilt ab sofort."] = "Applied ✓ – in effect now.",
+        ["Werkswerte des Controllers gelten wieder."] = "The controller's factory values apply again.",
+        // Gyro-Assistent
+        ["Gyro einrichten"] = "Set up gyro",
+        ["Einrichten …"] = "Set up …",
+        ["Zielen per Bewegung einrichten"] = "Set up motion aiming",
+        ["Schritt für Schritt: Nullpunkt, wann der Gyro zielt, Empfindlichkeit – mit Vorschau."] =
+            "Step by step: zero point, when the gyro aims, sensitivity – with preview.",
+        ["1  Nullpunkt"] = "1  Zero point",
+        ["Controller flach auf den Tisch legen, nicht berühren – verhindert, dass das Ziel von selbst wandert."] =
+            "Lay the controller flat on the table, do not touch it – keeps the aim from drifting by itself.",
+        ["Nullpunkt messen"] = "Measure zero point",
+        ["Der Controller hat sich bewegt – bitte flach hinlegen und erneut versuchen."] = "The controller moved – please lay it flat and try again.",
+        ["Nullpunkt gemessen ✓"] = "Zero point measured ✓",
+        ["2  Wann zielt der Gyro?"] = "2  When does the gyro aim?",
+        ["Nur per Taste"] = "Button only",
+        ["Beim Zielen (ZL/LT)"] = "While aiming (ZL/LT)",
+        ["„Beim Zielen“: nur solange ZL (linker Trigger) gehalten wird – wie in vielen Shootern."] =
+            "“While aiming”: only while ZL (left trigger) is held – as in many shooters.",
+        ["3  Empfindlichkeit"] = "3  Sensitivity",
+        ["Voller Ausschlag ab"] = "Full deflection from",
+        ["Kleinerer Wert bei „Voller Ausschlag ab“ = empfindlicher. „Mindestausschlag“ überwindet die Totzone des Spiels."] =
+            "Smaller “Full deflection from” = more sensitive. “Minimum deflection” overcomes the game's dead zone.",
+        ["Mitte"] = "Centre",
+        ["Vorschau: Fadenkreuz folgt dem Controller (unabhängig von Schritt 2)."] = "Preview: the crosshair follows the controller (regardless of step 2).",
+        ["Keine Bewegungsdaten"] = "No motion data",
+        ["Controller gekoppelt"] = "Controller paired",
+        ["Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive: SYNC-Taste drücken, bis die Lichter laufen.\n" +
+         "Wii-Fernbedienung: Batteriefach öffnen und die rote SYNC-Taste drücken.\n" +
+         "Wii U Pro Controller: die SYNC-Taste auf der Unterseite drücken.\n" +
+         "Danach verbindet sich der Controller künftig per Tastendruck."] =
+            "Joy-Con, Pro Controller, NES/SNES/N64/Mega Drive: press the SYNC button until the lights run.\n" +
+            "Wii Remote: open the battery compartment and press the red SYNC button.\n" +
+            "Wii U Pro Controller: press the SYNC button on the bottom.\n" +
+            "Afterwards the controller connects with a button press.",
+        ["Suche … SYNC-Taste drücken (Xbox: Kopplungstaste oben halten, PlayStation: PS + Teilen/Create halten)."] =
+            "Searching … press the SYNC button (Xbox: hold the pairing button on top, PlayStation: hold PS + Share/Create).",
+        ["Kein Controller im Kopplungsmodus gefunden. SYNC-Taste drücken und erneut versuchen."] =
+            "No controller in pairing mode found. Press SYNC and try again.",
+        ["Darstellung:"] = "Appearance:",
+        ["Dunkel"] = "Dark",
+        ["Hell"] = "Light",
+        ["Wie Windows"] = "Like Windows",
+        ["Mica-Effekt in der Titelleiste (ab Windows 11)"] = "Mica effect in the title bar (Windows 11 and later)",
+
+        // ---------- Fehlerfälle und Hinweise ----------
+        ["Bluetooth ist ausgeschaltet."] = "Bluetooth is turned off.",
+        ["Dieser Bluetooth-Adapter unterstützt kein Bluetooth LE."] = "This Bluetooth adapter does not support Bluetooth LE.",
+        ["Bluetooth-Suche konnte nicht starten."] = "Bluetooth search could not start.",
+        ["Bluetooth in den Windows-Einstellungen einschalten."] = "Turn on Bluetooth in the Windows settings.",
+        ["Controller per USB funktionieren weiterhin."] = "Controllers via USB keep working.",
+        ["Für Switch-2-Controller wird ein Adapter mit Bluetooth 4.0 oder neuer gebraucht."] = "Switch 2 controllers need an adapter with Bluetooth 4.0 or newer.",
+        ["Andere Controller und USB funktionieren weiterhin."] = "Other controllers and USB keep working.",
+        ["Bluetooth-Adapter (z. B. USB-Stick) einstecken bzw. Bluetooth in Windows aktivieren."] =
+            "Plug in a Bluetooth adapter (e.g. USB dongle) or enable Bluetooth in Windows.",
+        ["Bluetooth ist bereit – Controller können verbunden werden."] = "Bluetooth is ready – controllers can be connected.",
+        ["Bluetooth-Einstellungen öffnen"] = "Open Bluetooth settings",
+        ["ViGEmBus-Treiber fehlt – ohne ihn kann kein virtueller Controller erzeugt werden."] =
+            "ViGEmBus driver missing – without it no virtual controller can be created.",
+        ["Bitte das Setup erneut ausführen."] = "Please run the setup again.",
+        ["Das Programm schließen oder in Steam die Nintendo-Unterstützung abschalten."] =
+            "Close that program or turn off Nintendo support in Steam.",
+        ["Erst einen anderen trennen."] = "Disconnect another one first.",
+        ["Tipp: Bluetooth-Stick per Verlängerung näher an den Controller, weg von USB-3-Anschlüssen und Funkkopfhörern."] =
+            "Tip: move the Bluetooth dongle closer to the controller with an extension cable, away from USB 3 ports and wireless headphones.",
+        ["Controller mit dem PC gekoppelt – ab jetzt reicht ein Tastendruck."] = "Controller paired with the PC – from now on a button press is enough.",
+        ["Hinweis: Um ihn wieder an der Switch 2 zu nutzen, dort einmal kurz SYNC drücken."] =
+            "Note: to use it on the Switch 2 again, briefly press SYNC there once.",
+        ["Dieser Bluetooth-Adapter unterstützt kein Bluetooth LE"] = "This Bluetooth adapter does not support Bluetooth LE",
+        ["Erst IR-Kamera bzw. Ring-Con ausschalten (sie nutzen denselben Zusatzprozessor wie der NFC-Leser)."] =
+            "Turn off the IR camera or Ring-Con first (they use the same co-processor as the NFC reader).",
+        ["Erst die IR-Kamera schließen (Ring-Con und IR-Kamera nutzen denselben Zusatzprozessor)."] =
+            "Close the IR camera first (Ring-Con and IR camera use the same co-processor).",
+        ["Erst den Ring-Con ausschalten (Ring-Con und IR-Kamera nutzen denselben Zusatzprozessor)."] =
+            "Turn off the Ring-Con first (Ring-Con and IR camera use the same co-processor).",
+        ["amiibo zu früh entfernt"] = "amiibo removed too early",
+        ["MCU startet nicht"] = "co-processor does not start",
+        ["NFC-Modus nicht aktiv"] = "NFC mode not active",
+        ["Kopplung fehlgeschlagen – Details im Protokoll."] = "Pairing failed – details in the log.",
+
+        // ---------- Kopplungsdaten (Switch-SD-Karte, anderer PC) ----------
+        ["Kopplungsdaten"] = "Pairing data",
+        ["Kopplungen übernehmen oder weitergeben"] = "Take over or pass on pairings",
+        ["Kopplungsdaten von der Switch übernehmen"] = "Take over pairing data from the Switch",
+        ["Von der Switch-SD-Karte (Bluepick_RCM/hekate) oder von einem anderen PC übernehmen, oder für einen anderen PC exportieren."] =
+            "Take over from the Switch SD card (Bluepick_RCM/hekate) or from another PC, or export for another PC.",
+        ["Bei Switch-SD-Karte nachfragen"] = "Offer when a Switch SD card is inserted",
+        ["Steckt eine SD-Karte der Switch im PC (Kartenleser oder hekate „USB Tools“), bietet SKZ Connect die Übernahme an. Die Karte wird nur gelesen."] =
+            "When a Switch SD card is in the PC (card reader or hekate “USB Tools”), SKZ Connect offers to take over the data. The card is only read.",
+        ["Switch-SD-Karte erkannt"] = "Switch SD card detected",
+        ["Kopplungsdaten der Controller gefunden – klicken, um sie anzusehen und zu übernehmen."] =
+            "Controller pairing data found – click to view and take it over.",
+        ["Klicken, um Kopplungsdaten der Controller zu übernehmen."] = "Click to take over controller pairing data.",
+        ["Controller-Kopplungen von der Switch-SD-Karte oder von einem anderen PC übernehmen – oder für einen anderen PC exportieren. Es werden nur Einstellungen von SKZ Connect geändert; Windows und der Bluetooth-Adapter bleiben unverändert."] =
+            "Take over controller pairings from the Switch SD card or from another PC – or export them for another PC. Only SKZ Connect settings are changed; Windows and the Bluetooth adapter stay untouched.",
+        ["Spieler-Reihenfolge – Spieler 1 ist für Windows, Steam und Spiele der erste Controller. Mit ‹ › umsortieren."] =
+            "Player order – player 1 is the first controller for Windows, Steam and games. Use ‹ › to reorder.",
+        ["Von der Switch-SD-Karte"] = "From the Switch SD card",
+        ["Mit Bluepick_RCM oder hekate erstellte Kopplungsdaten (switchroot/joycon_mac.ini)"] =
+            "Pairing data created with Bluepick_RCM or hekate (switchroot/joycon_mac.ini)",
+        ["Einlesen …"] = "Read …",
+        ["Von einem anderen PC"] = "From another PC",
+        ["Mit SKZ Connect exportierte Datei (*.skzpair)"] = "File exported by SKZ Connect (*.skzpair)",
+        ["Datei öffnen …"] = "Open file …",
+        ["Inhalt"] = "Contents",
+        ["Weitergeben und sichern"] = "Share and back up",
+        ["Für einen anderen PC exportieren"] = "Export for another PC",
+        ["Bekannte Controller und Einstellungen je Controller, optional mit Passwort"] =
+            "Known controllers and per-controller settings, optionally password-protected",
+        ["Sicherung wiederherstellen"] = "Restore backup",
+        ["Vor jedem „Übernehmen“ wird automatisch eine Sicherung angelegt"] = "A backup is created automatically before every “Apply”",
+        ["Wiederherstellen …"] = "Restore …",
+        ["Bluetooth-Adapter dieses PCs"] = "Bluetooth adapter of this PC",
+        ["wird ermittelt …"] = "detecting …",
+        ["nicht gefunden"] = "not found",
+        ["Quelle wählen: Switch-SD-Karte (mit Bluepick_RCM oder hekate erstellte Kopplungsdaten) oder eine Datei von einem anderen PC."] =
+            "Choose a source: Switch SD card (pairing data created with Bluepick_RCM or hekate) or a file from another PC.",
+        ["Keine Switch-SD-Karte gefunden. SD-Karte in den Kartenleser stecken oder die Switch per hekate („USB Tools“ → „SD Card“) als Laufwerk verbinden.\n\nOrdner selbst auswählen?"] =
+            "No Switch SD card found. Insert the SD card into a card reader or connect the Switch as a drive via hekate (“USB Tools” → “SD Card”).\n\nChoose the folder yourself?",
+        ["Stammordner der Switch-SD-Karte wählen"] = "Choose the root folder of the Switch SD card",
+        ["Switch-SD-Karte:"] = "Switch SD card:",
+        ["Auf der Karte liegen keine Kopplungsdaten (switchroot/joycon_mac.ini)."] = "The card contains no pairing data (switchroot/joycon_mac.ini).",
+        ["So erstellst du sie: Joy-Con an die Switch stecken, Bluepick_RCM starten und „Dump Joy-Con BT pairing → SD“ (oder FULL AUTO) wählen. Alternativ in hekate: Nyx → Konsole → „Dump Joy-Con BT“."] =
+            "How to create it: attach the Joy-Con to the Switch, start Bluepick_RCM and choose “Dump Joy-Con BT pairing → SD” (or FULL AUTO). Alternatively in hekate: Nyx → Console → “Dump Joy-Con BT”.",
+        ["Gefunden wurde eine Bluepick-Sicherung des Bluetooth-Speichers (8000000000000050.bin). Sie ist ein Switch-Speicherabbild und kann hier nicht ausgewertet werden."] =
+            "A Bluepick backup of the Bluetooth save (8000000000000050.bin) was found. It is a Switch save image and cannot be evaluated here.",
+        ["Bluetooth-Adresse der Switch:"] = "Bluetooth address of the Switch:",
+        ["Gefundene Controller:"] = "Controllers found:",
+        ["mit der Switch gekoppelt"] = "paired with the Switch",
+        ["zuletzt mit einem anderen Gerät gekoppelt (nicht der Switch)"] = "last paired with another device (not the Switch)",
+        ["Joy-Con (L)"] = "Joy-Con (L)",
+        ["Joy-Con (R)"] = "Joy-Con (R)",
+        ["HORI-Controller (links)"] = "HORI controller (left)",
+        ["HORI-Controller (rechts)"] = "HORI controller (right)",
+        ["Hinweis: Pro Controller stehen nur im Bluetooth-Speicher der Switch (8000000000000050.bin); dieses Speicherabbild kann SKZ Connect nicht auswerten."] =
+            "Note: Pro Controllers are only listed in the Switch's Bluetooth save (8000000000000050.bin); SKZ Connect cannot evaluate this save image.",
+        ["Was diese Daten können – und was nicht:"] = "What this data can do – and what it cannot:",
+        ["Die Daten zeigen, welche Controller mit deiner Switch gekoppelt sind und an welche Bluetooth-Adresse sie gebunden sind."] =
+            "The data shows which controllers are paired with your Switch and which Bluetooth address they are bound to.",
+        ["Ein Switch-1-Controller verbindet sich auf Tastendruck nur mit dem Gerät, dessen Adresse er gespeichert hat – hier mit der Switch. Der Bluetooth-Adapter des PCs hat eine andere Adresse, deshalb kann Windows diese Kopplung nicht einfach weiterverwenden."] =
+            "A Switch 1 controller reconnects at the press of a button only to the device whose address it has stored – here the Switch. The PC's Bluetooth adapter has a different address, so Windows cannot simply reuse this pairing.",
+        ["Die Adresse des PC-Adapters zu ändern, unterstützt SKZ Connect bewusst nicht (herstellerabhängig, riskant und nicht vorgesehen)."] =
+            "SKZ Connect deliberately does not support changing the PC adapter's address (vendor-specific, risky and not intended).",
+        ["Windows bietet keinen offiziellen Weg, fremde Kopplungsschlüssel einzutragen: Sie liegen in einem Teil der Registrierung, auf den nur das System zugreifen darf. SKZ Connect ändert dort nichts."] =
+            "Windows offers no official way to add foreign pairing keys: they are stored in a part of the registry that only the system may access. SKZ Connect does not change anything there.",
+        ["So klappt der Wechsel am einfachsten: am PC den Controller einmal per SYNC-Taste in den Windows-Bluetooth-Einstellungen koppeln. Zurück an der Switch die Joy-Con an die Konsole stecken bzw. den Pro Controller per USB-Kabel anschließen – dann sind sie ohne Menü wieder mit der Switch gekoppelt."] =
+            "The easiest way to switch: on the PC, pair the controller once with the SYNC button in the Windows Bluetooth settings. Back on the Switch, attach the Joy-Con to the console or connect the Pro Controller with a USB cable – they are paired with the Switch again without any menu.",
+        ["„Übernehmen“ merkt sich diese Controller in SKZ Connect (Liste bekannter Controller, Zuordnung zur Switch). Kopplungsschlüssel werden nicht gespeichert."] =
+            "“Apply” remembers these controllers in SKZ Connect (list of known controllers, assignment to the Switch). Pairing keys are not stored.",
+        ["SKZ-Connect-Kopplungsdaten"] = "SKZ Connect pairing data",
+        ["Kopplungsdaten von einem anderen PC öffnen"] = "Open pairing data from another PC",
+        ["Die Datei ist zu groß."] = "The file is too large.",
+        ["Keine Kopplungsdaten-Datei."] = "Not a pairing data file.",
+        ["Die Datei stammt von einer neueren SKZ-Connect-Version."] = "The file comes from a newer SKZ Connect version.",
+        ["Die Datei ist mit einem Passwort geschützt."] = "The file is protected with a password.",
+        ["Falsches Passwort oder die Datei wurde verändert."] = "Wrong password or the file has been modified.",
+        ["Die Datei ist beschädigt."] = "The file is damaged.",
+        ["Datei von:"] = "File from:",
+        ["Bluetooth-Adapter dort:"] = "Bluetooth adapter there:",
+        ["Bluetooth-Adapter hier:"] = "Bluetooth adapter here:",
+        ["gekoppelt mit der Switch"] = "paired with the Switch",
+        ["gekoppelt mit dem anderen PC"] = "paired with the other PC",
+        ["Weitere Einstellungen je Controller:"] = "Further per-controller settings:",
+        ["Was du erwarten kannst:"] = "What you can expect:",
+        ["Gleiche Adapter-Adresse (z. B. derselbe USB-Bluetooth-Stick umgesteckt): Switch-2-Controller verbinden sich hier auf Tastendruck wie am anderen PC."] =
+            "Same adapter address (e.g. the same USB Bluetooth dongle moved over): Switch 2 controllers connect here at the press of a button just like on the other PC.",
+        ["Switch-1-Controller (Pro Controller, Joy-Con) brauchen zusätzlich die Kopplung in Windows. Die kann SKZ Connect nicht übertragen – einmal per SYNC-Taste koppeln."] =
+            "Switch 1 controllers (Pro Controller, Joy-Con) additionally need the pairing in Windows. SKZ Connect cannot transfer it – pair once with the SYNC button.",
+        ["Anderer Bluetooth-Adapter: Controller verbinden sich auf Tastendruck nur mit dem Gerät, mit dem sie zuletzt gekoppelt wurden. Hier einmal SYNC drücken – danach verbinden sie sich mit diesem PC (am anderen PC dann wieder per SYNC)."] =
+            "Different Bluetooth adapter: controllers reconnect at the press of a button only to the device they were last paired with. Press SYNC here once – afterwards they connect to this PC (on the other PC, use SYNC again).",
+        ["Tipp: Wer denselben USB-Bluetooth-Stick zwischen den PCs umsteckt, nimmt die Adresse mit – Switch-2-Controller verbinden sich dann an beiden PCs ohne SYNC."] =
+            "Tip: moving the same USB Bluetooth dongle between the PCs takes the address along – Switch 2 controllers then connect on both PCs without SYNC.",
+        ["Übernommen werden die Einstellungen je Controller (Joy-Con einzeln/hochkant, Gyro-Kalibrierung) und die Liste bekannter Controller."] =
+            "Taken over are the per-controller settings (Joy-Con single/upright, gyro calibration) and the list of known controllers.",
+        ["Die Datei enthält Kopplungsschlüssel. Windows bietet keinen offiziellen Weg, sie einzutragen – SKZ Connect übernimmt sie deshalb nicht."] =
+            "The file contains pairing keys. Windows offers no official way to add them – so SKZ Connect does not take them over.",
+        ["„Übernehmen“ ergänzt die Controller-Listen und Einstellungen von SKZ Connect (nichts wird gelöscht). Vorher wird eine Sicherung angelegt."] =
+            "“Apply” adds to SKZ Connect's controller lists and settings (nothing is deleted). A backup is created first.",
+        ["Kopplungsdaten in SKZ Connect übernehmen? Vorher wird eine Sicherung der Einstellungen angelegt."] =
+            "Take over the pairing data into SKZ Connect? A backup of the settings is created first.",
+        ["Nichts zu ändern – diese Daten sind schon übernommen."] = "Nothing to change – this data has already been taken over.",
+        ["Übernommen. Die Sicherung lässt sich hier über „Sicherung wiederherstellen“ zurückholen."] =
+            "Done. The backup can be restored here via “Restore backup”.",
+        ["Sicherung der Einstellungen"] = "Settings backup",
+        ["Die Sicherung ist beschädigt und wurde nicht übernommen."] = "The backup is damaged and was not applied.",
+        ["Alle Einstellungen durch diese Sicherung ersetzen?"] = "Replace all settings with this backup?",
+        ["Sicherung wiederhergestellt."] = "Backup restored.",
+        ["Kopplungsdaten für einen anderen PC speichern"] = "Save pairing data for another PC",
+        ["Gespeichert. Die Datei am anderen PC in SKZ Connect unter „Joy-Con & Wii“ → „Kopplungsdaten“ → „Von einem anderen PC“ öffnen."] =
+            "Saved. On the other PC, open the file in SKZ Connect under “Joy-Con & Wii” → “Pairing data” → “From another PC”.",
+        ["Kopplungsdaten exportieren"] = "Export pairing data",
+        ["Passwort eingeben"] = "Enter password",
+        ["Passwort (optional). Ohne Passwort steht der Inhalt lesbar in der Datei. Mit Kopplungsschlüsseln ist ein Passwort Pflicht."] =
+            "Password (optional). Without a password the content is readable in the file. With pairing keys a password is required.",
+        ["Passwort"] = "Password",
+        ["Passwort wiederholen"] = "Repeat password",
+        ["Kopplungsschlüssel der Switch-Controller mitnehmen"] = "Include the Switch controllers' pairing keys",
+        ["Kopplungsschlüssel mitnehmen (erst Switch-SD-Karte einlesen)"] = "Include pairing keys (read a Switch SD card first)",
+        ["Die Passwörter stimmen nicht überein."] = "The passwords do not match.",
+        ["Mit Schlüsseln: Passwort mit mindestens 8 Zeichen."] = "With keys: password with at least 8 characters.",
+        ["Mindestens 8 Zeichen."] = "At least 8 characters.",
+        ["Ohne Passwort."] = "Without password.",
+    };
+}
