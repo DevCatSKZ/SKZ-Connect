@@ -286,7 +286,9 @@ internal sealed partial class InputView
             BodyShape(g, body, white);
         }
         ColorKey(g, new PointF(nx - 30, 50), c, "C", key, 10, dark);
-        Stick(g, new PointF(nx, 112), _gamepad.LeftX, _gamepad.LeftY, false, 34, 21);
+        // Der Nunchuk ist weiß: Stick-Mulde und -Kappe hell, nicht in den dunklen Standardfarben der anderen Bilder.
+        Stick(g, new PointF(nx, 112), _gamepad.LeftX, _gamepad.LeftY, false, 34, 21,
+            capColor: Color.FromArgb(0xF4, 0xF4, 0xF6), wellColor: Color.FromArgb(0xD9, 0xD9, 0xDE));
         g.Restore(size);
     }
 
