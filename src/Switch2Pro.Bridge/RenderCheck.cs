@@ -411,7 +411,7 @@ internal static class RenderCheck
                 var input = new PadInput
                 {
                     Kind = kind,
-                    Buttons = pressed ? ProButtons.A | ProButtons.Up | ProButtons.L | ProButtons.Plus | ProButtons.ZL : ProButtons.None,
+                    Buttons = pressed ? ProButtons.A | ProButtons.Up | ProButtons.L | ProButtons.Plus | ProButtons.ZL | ProButtons.R | ProButtons.ZR : ProButtons.None,
                     LeftX = pressed ? 0.8f : 0, LeftY = pressed ? 0.5f : 0, RightX = pressed ? 1 : 0, RightY = 0,
                     LeftTrigger = pressed ? 0.6f : 0, RightTrigger = 0,
                     Pointer = pressed && kind == ControllerKind.WiiRemote ? (0.3f, 0.6f) : null,

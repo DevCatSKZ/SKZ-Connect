@@ -207,6 +207,17 @@ internal sealed partial class InputView
             g.Restore(state);
             return;
         }
+        if (_artworkVisible && ArtCapPath(CurrentArtworkName(), text) is { } cap)
+        {
+            using (cap)
+            {
+                var state = g.Save();
+                g.SetClip(cap, CombineMode.Intersect);
+                HighlightArtwork(g, cap, on ? 1 : value);
+                g.Restore(state);
+            }
+            return;
+        }
         var p1 = f.P(x1, yT1);
         var p2 = f.P(x1, yB1);
         var p3 = f.P(x0, yB0);
