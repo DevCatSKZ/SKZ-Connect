@@ -15,7 +15,7 @@ SKZ Connect brings Nintendo, PlayStation and other controllers to Windows games 
 | Platform | Version | Download |
 |---|---|---|
 | Windows 10 (2004+) / 11, x64 | 1.0.26 | [Setup / Portable](https://github.com/DevCatSKZ/SKZ-Connect/releases/latest) |
-| Android 8+, arm64 / x86_64 | 0.9.5 Beta | [APK](https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.26/SKZ-Connect-Android-0.9.5.apk) |
+| Android 8+, arm64 / x86_64 | 0.9.6 Beta | [APK](https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.27/SKZ-Connect-Android-0.9.6.apk) |
 | Kodi / LibreELEC | 0.4.10 | [DevCatSKZ Repository](https://github.com/DevCatSKZ/kodi-repo) |
 
 ## Features

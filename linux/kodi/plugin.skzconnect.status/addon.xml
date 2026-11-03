@@ -5,7 +5,7 @@
          Das Symbol (resources/icon.png) legt linux/build-kodi-addon.ps1 beim Packen hinein. -->
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="service.skzconnect" version="0.4.10"/>
+        <import addon="service.skzconnect" version="0.4.11"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
