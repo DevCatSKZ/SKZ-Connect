@@ -22,7 +22,8 @@ ist, steht das dabei.
 | [archiv/](archiv/) | Verworfene Wege: ESP32/nRF52840 als zweiter „Bluetooth-Stick“ und das USB-Protokoll dazu |
 
 Für Nutzer: [../README.md](../README.md) und die Anleitungen [Windows](anleitung/windows.md),
-[Android](anleitung/android.md), [Kodi](anleitung/kodi.md), [Hilfe bei Problemen](anleitung/hilfe.md) (englisch in
+[Android](anleitung/android.md), [Kodi](anleitung/kodi.md), [SteamOS/Linux](anleitung/steamos.md),
+[Hilfe bei Problemen](anleitung/hilfe.md) (englisch in
 [guide/](guide/)). Bauen und Tests: [BUILDING.md](BUILDING.md). Lizenzen: [../THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
 ## In einem Satz

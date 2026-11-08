@@ -37,7 +37,7 @@ The Windows setup installs ViGEmBus and HidHide. App and setup are not code-sign
 
 ## Documentation and privacy
 
-[Windows](docs/guide/windows.md) · [Android](docs/guide/android.md) · [Kodi](docs/guide/kodi.md) · [Troubleshooting](docs/guide/troubleshooting.md) · [Technical documentation](docs/README.md) · [Build and test](docs/BUILDING.md)
+[Windows](docs/guide/windows.md) · [Android](docs/guide/android.md) · [Kodi](docs/guide/kodi.md) · [SteamOS/Linux](docs/guide/steamos.md) · [Troubleshooting](docs/guide/troubleshooting.md) · [Technical documentation](docs/README.md) · [Build and test](docs/BUILDING.md)
 
 No account, ads or telemetry. Controllers work offline; the Windows app can check GitHub for updates. Report bugs as an [issue](https://github.com/DevCatSKZ/SKZ-Connect/issues). Review diagnostics for personal information before sharing them.
 

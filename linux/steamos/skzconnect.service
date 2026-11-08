@@ -1,0 +1,12 @@
+[Unit]
+Description=SKZ Connect – Nintendo-Switch-2-Controller als Xbox-360-Controller
+After=bluetooth.target
+
+[Service]
+Type=simple
+ExecStart=/var/lib/skzconnect/skzconnect --data /var/lib/skzconnect
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

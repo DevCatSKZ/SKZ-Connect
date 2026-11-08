@@ -86,4 +86,5 @@ jobs:
             if (Test-Path $notes) { gh release create $tag --title "SKZ Connect $tag" --notes-file $notes }
             else { gh release create $tag --title "SKZ Connect $tag" --generate-notes }
           }
-          gh release upload $tag (Get-ChildItem out/kodi -Filter 'SKZ-Connect-Kodi-*.zip').FullName --clobber
+          gh release upload $tag (Get-ChildItem out/kodi -Filter 'SKZ-Connect-Kodi-*.zip').FullName `
+              (Get-ChildItem out/kodi -Filter 'SKZ-Connect-Linux-*.tar.gz').FullName --clobber

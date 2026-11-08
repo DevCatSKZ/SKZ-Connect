@@ -46,8 +46,11 @@ wurde nicht aufgeteilt.
 2. **Doppelte Logik in die Bibliothek ziehen**, sobald eine dritte Fassung entstünde: Spieler-/Paarverwaltung und die
    Ablaufsteuerung von `Player` (Belegung anwenden, Makros, Gyro-Maus/-Stick, Gesten) hängen nur über
    `IControllerLink`, `IVirtualPad` und die Eingabe-Ausgabe an der Plattform.
-3. **Steam Deck / Desktop-Linux:** Der Linux-Dienst läuft grundsätzlich ohne Kodi (`skzconnect` ohne `--kodi`), ist dort
-   aber ungetestet; `hid-nintendo` und Steam Input decken die Classic-Controller bereits ab.
+3. **SteamOS / Desktop-Linux:** Der Linux-Dienst läuft ohne Kodi (`skzconnect` ohne `--kodi`). Das Paket
+   `SKZ-Connect-Linux-<Version>-x86_64.tar.gz` (aus `linux/steamos/` + `linux/make-linux-tar.py`, gebaut von
+   `linux/build-kodi-addon.ps1`) installiert ihn als systemd-Dienst; Anleitung in
+   [anleitung/steamos.md](anleitung/steamos.md). `hid-nintendo` und Steam Input decken die Classic-Controller
+   bereits ab – auf echter SteamOS-Hardware ist der Dienst noch zu prüfen.
 4. **macOS:** Ohne öffentliche API für virtuelle Gamepads ist nur eine Anzeige oder ein eigener Treiber mit
    Sonderberechtigung möglich.
 5. **Windows ohne ViGEmBus:** Fällt der archivierte Treiber aus, wäre ein eigener Treiber über das Virtual HID

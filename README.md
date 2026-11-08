@@ -37,7 +37,7 @@ Das Windows-Setup installiert ViGEmBus und HidHide. App und Setup sind nicht cod
 
 ## Dokumentation und Datenschutz
 
-[Windows](docs/anleitung/windows.md) · [Android](docs/anleitung/android.md) · [Kodi](docs/anleitung/kodi.md) · [Problemlösung](docs/anleitung/hilfe.md) · [Entwicklerdokumentation](docs/README.md) · [Bauen und testen](docs/BUILDING.md)
+[Windows](docs/anleitung/windows.md) · [Android](docs/anleitung/android.md) · [Kodi](docs/anleitung/kodi.md) · [SteamOS/Linux](docs/anleitung/steamos.md) · [Problemlösung](docs/anleitung/hilfe.md) · [Entwicklerdokumentation](docs/README.md) · [Bauen und testen](docs/BUILDING.md)
 
 Kein Konto, keine Werbung, keine Telemetrie. Controllerbetrieb funktioniert offline; die Windows-App kann GitHub auf Updates prüfen. Fehler bitte als [Issue](https://github.com/DevCatSKZ/SKZ-Connect/issues) melden. Diagnoseberichte vor dem Teilen auf persönliche Angaben prüfen.
 

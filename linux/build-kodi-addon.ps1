@@ -115,7 +115,7 @@ if (-not $NoBuild) {
     New-Item -ItemType Directory -Force $out | Out-Null
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     foreach ($pattern in @('SKZ-Connect-Kodi-LibreELEC-*.zip', 'plugin.skzconnect.status-*.zip', 'script.skzconnect.bundle-*.zip',
-                           'repository.devcatskz-*.zip')) {
+                           'repository.devcatskz-*.zip', 'SKZ-Connect-Linux-*.tar.gz')) {
         Get-ChildItem $out -File -Filter $pattern | Remove-Item -Force
     }
     New-Item -ItemType Directory -Force $stage | Out-Null
@@ -146,6 +146,13 @@ if (-not $NoBuild) {
 
     # 5. Repository-Add-on „DevCatSKZ Repository“ (für alle Kodi-Plugins von DevCatSKZ, gehostet in DevCatSKZ/kodi-repo)
     New-Zip $repoZip (Get-AddonFiles 'repository.devcatskz' -NoLicense)
+
+    # 6. Eigenständiges Linux-Paket (SteamOS & Co., ohne Kodi): x64-Programm + systemd-Installation
+    if ($Rids -contains 'linux-x64') {
+        & py -3 (Join-Path $PSScriptRoot 'make-linux-tar.py') $out $version (Join-Path $stage 'bin\linux-x64') `
+            (Join-Path $PSScriptRoot 'steamos') $root
+        if ($LASTEXITCODE -ne 0) { throw "Linux-Paket fehlgeschlagen" }
+    }
     Remove-Item $stage -Recurse -Force
 }
 else {
