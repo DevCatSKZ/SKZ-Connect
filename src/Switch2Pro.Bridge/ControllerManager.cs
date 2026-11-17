@@ -437,6 +437,15 @@ internal sealed class ControllerManager : IAsyncDisposable
         foreach (var path in UsbNative.GetInterfacePaths(UsbNative.HidInterface))
         {
             var kind = Switch1Devices.KindFromHidPath(path);
+            // Lizenzierte Bluetooth-Controller (PowerA „Enhanced Wireless“ u. a.) melden VID/PID 0000:0000
+            // und sind nur an ihrer Produktzeichenkette zu erkennen (z. B. „Lic Pro Controller“).
+            string? licensedName = null;
+            if (kind == ControllerKind.Unknown && Switch1Devices.HasZeroBluetoothVendorId(path))
+            {
+                licensedName = LicensedProductName(path);
+                if (licensedName is not null)
+                    kind = ControllerKind.Pro1;
+            }
             // Lizenzierte Kabel-Gamepads (HORI, PowerA, PDP): eigenes, einfaches Format.
             string? wiredPad = kind == ControllerKind.Unknown ? WiredSwitchPad.NameFromHidPath(path) : null;
             // Sony DualShock 4 / DualSense (USB und Bluetooth-Classic-HID). Unser eigener virtueller
@@ -454,7 +463,26 @@ internal sealed class ControllerManager : IAsyncDisposable
                 continue;
             Track(wiredPad is not null ? ConnectWiredPadAsync(path, wiredPad)
                 : sony is { } psKind ? ConnectPlayStationAsync(path, psKind)
-                : ConnectHidAsync(path, kind));
+                : ConnectHidAsync(path, kind, licensedName));
+        }
+    }
+
+    /// <summary>
+    /// Produktzeichenkette eines Bluetooth-HID-Geräts mit VID 0000 lesen. Liefert den Namen, wenn er einen
+    /// bekannten Lizenz-Controller bezeichnet (Switch-1-Protokoll), sonst null. Das Gerät bleibt danach
+    /// geschlossen; die Verbindung öffnet es erneut.
+    /// </summary>
+    private static string? LicensedProductName(string path)
+    {
+        try
+        {
+            using var device = UsbNative.Open(path, 0);
+            var name = UsbNative.GetHidString(device, serial: false);
+            return Switch1Devices.LicensedKind(name) == ControllerKind.Unknown ? null : name;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return null; // nicht lesbar (gerade getrennt, belegt) – nächster Suchlauf versucht es erneut
         }
     }
 
@@ -482,17 +510,17 @@ internal sealed class ControllerManager : IAsyncDisposable
         }
     }
 
-    private async Task ConnectHidAsync(string path, ControllerKind kind)
+    private async Task ConnectHidAsync(string path, ControllerKind kind, string? productName = null)
     {
         Changed?.Invoke();
-        Log.Info($"{kind.DisplayName()} gefunden ({path})");
+        Log.Info($"{productName ?? kind.DisplayName()} gefunden ({path})");
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
             IControllerLink link = kind == ControllerKind.WiiRemote
                 ? await WiimoteHidLink.ConnectAsync(path, _settings, timeout.Token)
-                : await Switch1HidLink.ConnectAsync(path, kind, timeout.Token);
+                : await Switch1HidLink.ConnectAsync(path, kind, timeout.Token, productName);
             _unreachable.TryRemove(path, out _);
             // Abgelehnt (alle Plätze belegt, ViGEm-Fehler): nicht alle 2 s neu öffnen und komplett initialisieren.
             if (!Attach(link))
@@ -1376,4 +1404,25 @@ internal static class Switch1Devices
         }
         return ControllerKind.Unknown;
     }
+
+    /// <summary>
+    /// Lizenz-Controller im Switch-1-Protokoll (PowerA „Enhanced Wireless“ u. a.) melden über Bluetooth
+    /// VID/PID 0000:0000 – im HID-Pfad steht die VID in den letzten vier Zeichen von „vid&amp;XXXXXXXX_pid&amp;“
+    /// (die vorderen vier sind die VID-Herkunft).
+    /// </summary>
+    public static bool HasZeroBluetoothVendorId(string path)
+    {
+        var p = path.ToLowerInvariant();
+        int v = p.IndexOf("vid&", StringComparison.Ordinal);
+        return v >= 0 && v + 12 < p.Length && p[v + 12] == '_' && p.Substring(v + 8, 4) == "0000";
+    }
+
+    /// <summary>Produktnamen lizenzierter Bluetooth-Controller im Switch-1-Protokoll → Pro-Controller-Anlage.</summary>
+    private static readonly string[] LicensedNames = ["Lic Pro Controller"];
+
+    /// <summary>Art eines Lizenz-Controllers aus seiner Produktzeichenkette; Unknown bei Unbekanntem.</summary>
+    public static ControllerKind LicensedKind(string? productName) =>
+        productName is not null && LicensedNames.Any(n => productName.StartsWith(n, StringComparison.OrdinalIgnoreCase))
+            ? ControllerKind.Pro1
+            : ControllerKind.Unknown;
 }

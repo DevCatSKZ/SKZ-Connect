@@ -158,5 +158,5 @@ which system – and ideally with diagnostics.
   `userdata/addon_data/service.skzconnect/skzconnect.log`.
 
 Feedback is especially helpful for controllers that have not yet been tested with real hardware: DualShock 4,
-DualSense, Xbox via Bluetooth or Wireless Adapter, wired controllers by HORI, PowerA and PDP, and Joy-Con in the
-charging grip.
+DualSense, Xbox via Bluetooth or Wireless Adapter, wired and Bluetooth controllers by HORI, PowerA and PDP, and
+Joy-Con in the charging grip.

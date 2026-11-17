@@ -183,6 +183,8 @@ ein Gerät im Kopplungsmodus antwortet und bekommt einen neuen Wert. Switch 1/NS
 (MITM nicht nötig, Bonding) mit `BluetoothRegisterForAuthenticationEx`-Rückruf, der per
 `BluetoothSendAuthenticationResponseEx` zustimmt (Legacy-PIN wird abgelehnt). Wii: `BluetoothAuthenticateDevice`
 mit 6-Zeichen-PIN (Adressbytes). Danach `BluetoothSetServiceState` (HID-Dienst 00001124-…).
+- **Lizenz-Controller (PowerA „Enhanced Wireless“ u. a.)** melden über Bluetooth VID/PID 0000:0000 und sprechen
+  das Switch-1-Protokoll. Erkannt werden sie an ihrer HID-Produktzeichenkette („Lic Pro Controller“).
 
 ## 7. Ausgabe
 ### 7.1 Xbox 360 (ViGEm)

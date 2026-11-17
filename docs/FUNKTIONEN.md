@@ -18,7 +18,7 @@ Fundstellen in Klammern (`Datei`/`Klasse`), damit sich Details schnell nachschla
 | Wii-Fernbedienung (+ Plus) | Bluetooth Classic HID | Tasten, Beschl., IR-Zeiger, MotionPlus, Nunchuk, Classic | Vibration, LEDs |
 | Wii U Pro Controller | Bluetooth Classic HID (Wii-Protokoll) | Tasten, 2 Sticks, Akku | Vibration, LEDs |
 | Kabel-Pads HORI/PowerA/PDP | USB-HID (einfaches Format) | Tasten, Sticks, Steuerkreuz | – |
-| Nachbauten im Switch-Modus (8BitDo, „Lic Pro Controller“) | wie Switch Pro Controller | wie Pro Controller, soweit unterstützt | wie Pro Controller |
+| Lizenz- und Nachbau-Controller im Switch-Modus (PowerA, 8BitDo, „Lic Pro Controller“, Bluetooth-VID 0000) | wie Switch Pro Controller | wie Pro Controller, soweit unterstützt | wie Pro Controller, soweit vorhanden (kein NFC-Leser) |
 | DualShock 4 (Sony) | USB und Bluetooth Classic HID (VID 054C, PID 05C4/09CC/0BA0) | Tasten, Touchpad-Klick, Sticks, analoge Trigger, Gyro/Beschl., Akku | Vibration, Lichtleiste |
 | DualSense / DualSense Edge (Sony) | USB und Bluetooth Classic HID (VID 054C, PID 0CE6/0DF2) | wie DualShock 4 + Mikro-Taste, Edge-Backtasten | Vibration, Lichtleiste, Spieler-LEDs, Mikro-LED |
 | Xbox-Controller (360, One, Series, Elite, XInput-kompatible) | beliebig (USB, Bluetooth, Xbox-Wireless-Adapter) – über **XInput** | Tasten, Sticks, analoge Trigger, Guide-Taste, Akku | Vibration direkt über XInput; **nativ**, kein virtueller Controller |
@@ -146,6 +146,9 @@ erneut versucht – ebenso, wenn ViGEm keinen virtuellen Controller anlegen kann
 - Nachbauten im Switch-Modus: Beantworten sie Speicher-Lesebefehle nicht, nutzt SKZ Connect nach der ersten
   ausbleibenden Antwort Standardwerte (keine weiteren Wartezeiten). Melden sie keine Bluetooth-Adresse
   (00:… bzw. FF:…), dient die Geräte-Instanz als Kennung.
+- Lizenzierte Bluetooth-Controller (PowerA „Enhanced Wireless“ u. a.) melden VID/PID 0000:0000 und werden an
+  ihrer Produktzeichenkette erkannt („Lic Pro Controller“). Sie sprechen das Switch-1-Protokoll, haben aber
+  keinen NFC-Leser (amiibo-Lesen wird für sie nicht angeboten) und meist keine Vibration.
 
 ### 2.5 Xbox- und PlayStation-Controller
 - **Xbox über XInput** (`XInputLink`, Protokoll `XboxPad`): alle vier XInput-Plätze werden alle 2 s geprüft.

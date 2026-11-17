@@ -41,6 +41,7 @@ Ohne Installation: [Portable Version](hilfe.md#portable-version).
 | DualShock 4, DualSense | PS + Teilen bzw. PS + Create halten, bis die Lichtleiste schnell blinkt; SKZ Connect koppelt selbst. Alternativ per USB-Kabel oder über die Bluetooth-Einstellungen von Windows. |
 | Xbox | Wie gewohnt per USB, Bluetooth oder Xbox-Wireless-Adapter. Über Bluetooth kann auch „Controller koppeln …“ den Controller koppeln (Kopplungstaste oben halten). |
 | Kabel-Controller von HORI, PowerA, PDP | USB-Kabel anstecken. |
+| Bluetooth-Controller von PowerA u. a. („Lic Pro Controller“) | SYNC-Taste halten; Kopplung und Betrieb wie beim Switch Pro Controller – aber ohne NFC und meist ohne Vibration. |
 
 Danach genügt beim nächsten Mal ein Tastendruck. Bis zu 8 Controller laufen gleichzeitig.
 

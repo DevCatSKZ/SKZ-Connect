@@ -6,7 +6,8 @@ using Switch2Pro.Protocol;
 namespace Switch2Pro.Bridge.Links;
 
 /// <summary>
-/// Switch-1-Controller (Pro Controller, Joy-Con L/R), in Windows per Bluetooth gekoppelt.
+/// Switch-1-Controller (Pro Controller, Joy-Con L/R) und lizenzierte Nachbauten (PowerA, „Lic Pro Controller“,
+/// Bluetooth-VID 0000), in Windows per Bluetooth gekoppelt.
 /// Windows stellt ihn als HID-Gerät bereit; wir schalten ihn in den Vollbericht 0x30 (60 Hz, mit Gyro),
 /// lesen die Kalibrierung aus dem SPI-Flash und senden HD-Rumble. Ablauf wie SDL (SDL_hidapi_switch.c).
 /// </summary>
@@ -62,11 +63,24 @@ internal sealed class Switch1HidLink : IControllerLink
         HidInstanceId = UsbNative.GetInstanceId(path);
     }
 
-    public static async Task<Switch1HidLink> ConnectAsync(string hidPath, ControllerKind kind, CancellationToken ct)
+    /// <summary>Eigener Gerätename (Lizenz-Controller wie „Lic Pro Controller“), sonst null.</summary>
+    public string? ProductName { get; private set; }
+    /// <summary>
+    /// Lizenz-Nachbau (PowerA „Enhanced Wireless“ u. a., Bluetooth-VID 0000): kein NFC-Leser, Speicher
+    /// und Kalibrierung oft nicht lesbar. Eingaben, Sticks und Bewegung laufen wie beim Pro Controller.
+    /// </summary>
+    public bool Licensed { get; private set; }
+
+    public static async Task<Switch1HidLink> ConnectAsync(string hidPath, ControllerKind kind, CancellationToken ct,
+        string? productName = null)
     {
         var hid = new HidChannel(hidPath);
         bool usb = hidPath.Contains("vid_057e&pid", StringComparison.OrdinalIgnoreCase);
-        var link = new Switch1HidLink(kind, hidPath, hid, usb ? Transport.Usb : Transport.Bluetooth);
+        var link = new Switch1HidLink(kind, hidPath, hid, usb ? Transport.Usb : Transport.Bluetooth)
+        {
+            ProductName = productName,
+            Licensed = productName is not null,
+        };
         try
         {
             await link.StartAsync(usb, ct);
@@ -122,7 +136,7 @@ internal sealed class Switch1HidLink : IControllerLink
         _lastInputTicks = Environment.TickCount64;
         _ = Task.Run(() => WatchdogAsync(_cts.Token));
         Task.Run(() => RumbleLoopAsync(_cts.Token)).Forget($"{Id}: Vibration");
-        Log.Info($"{Id}: {Kind.DisplayName()} bereit ({Address ?? "?"})");
+        Log.Info($"{Id}: {ProductName ?? Kind.DisplayName()} bereit ({Address ?? "?"})");
     }
 
     private async Task ReadCalibrationAsync(CancellationToken ct)
@@ -227,8 +241,9 @@ internal sealed class Switch1HidLink : IControllerLink
 
     // ---------- amiibo (NFC) ----------
 
-    /// <summary>Hat dieser Controller einen NFC-Leser? (rechter Joy-Con und Pro Controller der Switch 1)</summary>
-    public bool HasNfc => Kind is ControllerKind.JoyCon1Right or ControllerKind.Pro1;
+    /// <summary>Hat dieser Controller einen NFC-Leser? (rechter Joy-Con und Pro Controller der Switch 1;
+    /// Lizenz-Controller wie PowerA haben keinen)</summary>
+    public bool HasNfc => Kind is ControllerKind.JoyCon1Right || (Kind == ControllerKind.Pro1 && !Licensed);
 
     private TaskCompletionSource<(byte Kind, byte[] Data)>? _mcuWaiter;
     private readonly SemaphoreSlim _nfcLock = new(1, 1);
