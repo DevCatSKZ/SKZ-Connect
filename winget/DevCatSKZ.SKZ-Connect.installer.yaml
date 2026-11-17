@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 PackageIdentifier: DevCatSKZ.SKZ-Connect
-PackageVersion: 1.0.27
+PackageVersion: 1.0.28
 InstallerLocale: en-US
 Platform:
   - Windows.Desktop
@@ -10,13 +10,13 @@ InstallModes:
   - silent
   - silentWithProgress
 UpgradeBehavior: install
-ReleaseDate: "2026-11-03"
+ReleaseDate: "2026-11-17"
 Installers:
   - Architecture: x64
     InstallerType: inno
     Scope: machine
-    InstallerUrl: https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.27/SKZ-Connect-Setup-1.0.27.exe
-    InstallerSha256: A1F0E05FA1B2E74E23A7E5D5795B404D30FB8BC5AAE04F5F7CA7CB8405AFFE5E
+    InstallerUrl: https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.28/SKZ-Connect-Setup-1.0.28.exe
+    InstallerSha256: D0F8069F70CAF06FDE977F8019A21A999AB0540B3C6D72E8A37256E24C91B996
     InstallerSwitches:
       Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
       SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
@@ -30,7 +30,7 @@ Installers:
     NestedInstallerFiles:
       - RelativeFilePath: SKZ-Connect.exe
         PortableCommandAlias: SKZ-Connect
-    InstallerUrl: https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.27/SKZ-Connect-Portable-1.0.27.zip
-    InstallerSha256: 51677FA6DA6C683690010190918DAD29A21C40D75DBDC51D1F70F08A2581BFD9
+    InstallerUrl: https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.28/SKZ-Connect-Portable-1.0.28.zip
+    InstallerSha256: 05A0C33062B96726D3AD3A7B74936BF3175F4D082CE9BEF9DD02A27289B054BF
 ManifestType: installer
 ManifestVersion: 1.6.0
