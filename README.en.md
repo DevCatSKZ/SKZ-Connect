@@ -4,19 +4,20 @@
 
 **Connect controllers. Customize inputs. Play.**
 
-SKZ Connect brings Nintendo, PlayStation and other controllers to Windows games and emulators as Xbox or DualShock 4 controllers. An Android app and a Kodi/LibreELEC add-on are also available for Switch 2 controllers.
+SKZ Connect brings Nintendo, PlayStation and other controllers to Windows games and emulators as Xbox or DualShock 4 controllers. An Android app, a Kodi/LibreELEC add-on and a Linux service for SteamOS are also available for Switch 2 controllers.
 
 [Deutsch](README.md) · [English](README.en.md) · [Website](https://devcatskz.github.io/SKZ-Connect/)
 
-![SKZ Connect – demo](https://devcatskz.github.io/SKZ-Connect/screenshots/uebersicht.png?v=1.0.26)
+![SKZ Connect – demo](https://devcatskz.github.io/SKZ-Connect/screenshots/uebersicht.png?v=1.0.29)
 
 ## Download
 
 | Platform | Version | Download |
 |---|---|---|
-| Windows 10 (2004+) / 11, x64 | 1.0.26 | [Setup / Portable](https://github.com/DevCatSKZ/SKZ-Connect/releases/latest) |
-| Android 8+, arm64 / x86_64 | 0.9.6 Beta | [APK](https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.27/SKZ-Connect-Android-0.9.6.apk) |
-| Kodi / LibreELEC | 0.4.10 | [DevCatSKZ Repository](https://github.com/DevCatSKZ/kodi-repo) |
+| Windows 10 (2004+) / 11, x64 | 1.0.29 | [Setup / Portable](https://github.com/DevCatSKZ/SKZ-Connect/releases/latest) |
+| Android 8+, arm64 / x86_64 | 0.9.6 Beta | [APK](https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.29/SKZ-Connect-Android-0.9.6.apk) |
+| Kodi / LibreELEC | 0.4.12 | [DevCatSKZ Repository](https://github.com/DevCatSKZ/kodi-repo) |
+| Linux / SteamOS, x86_64 | 0.4.12 | [tar.gz](https://github.com/DevCatSKZ/SKZ-Connect/releases/download/v1.0.29/SKZ-Connect-Linux-0.4.12-x86_64.tar.gz) |
 
 ## Features
 
@@ -25,6 +26,7 @@ SKZ Connect brings Nintendo, PlayStation and other controllers to Windows games 
 - Gyro as stick or mouse, flick stick and DSU for emulators.
 - 28 model images, an optional buttons-only view and 14 color schemes.
 - Android: Switch 2 controllers over Bluetooth LE; virtual output via Shizuku or root, or touch controls.
+- Linux / SteamOS: Switch 2 controllers via BlueZ and uinput, with a systemd service and installer script. Not yet tested on real SteamOS hardware.
 - Kodi: Switch 2 controllers for Kodi and RetroArch; battery display, model images and skin widgets. Packages for x86_64, ARM64 and ARM.
 
 ## Controllers and requirements

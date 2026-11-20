@@ -43,6 +43,9 @@ jobs:
       - name: Linux-Dienst testen
         run: dotnet test tests/SkzConnect.Linux.Tests -c Release
 
+      - name: Linux-Paket prüfen
+        run: python -m unittest discover -s linux/tests -v
+
       - name: Add-on-Logik testen, Sprachdateien aktuell
         run: |
           python -m unittest discover -s linux/kodi/tests -v
